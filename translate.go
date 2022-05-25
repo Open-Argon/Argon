@@ -28,7 +28,7 @@ func init() {
 func split_by_semicolon_and_newline(str string) []code {
 	output := []code{}
 	temp := []byte{}
-	split := strings.Split(str, "\n")
+	split := strings.Split(strings.ReplaceAll(str, "\r", ""), "\n")
 	splitoutput := []string{}
 	for i := 0; i < len(split); i++ {
 		if !(skipCompile.MatchString(split[i])) {
