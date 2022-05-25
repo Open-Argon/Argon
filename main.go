@@ -3,17 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 )
-
-type process struct {
-	t    int
-	x    interface{}
-	y    interface{}
-	line int
-}
 
 type code struct {
 	code string
@@ -46,40 +40,26 @@ func stringencode(str string) string {
 	return output
 }
 
-func main() {
-	stringCompile, err := regexp.Compile("^(( *)((\"((\\\\([a-z\\\"']))|[^\\\"])*\"))|(('((\\\\([a-z\\'\"]))|[^\\'])*'))( *))$")
+func makeRegex(str string) *regexp.Regexp {
+	Compile, err := regexp.Compile("^(" + str + ")$")
 	if err != nil {
 		log.Fatal(err)
 	}
-	numberCompile, err := regexp.Compile("^(( *)(\\-)?(([0-9]+(\\.[0-9]+)?)(e(([0-9]+(\\.[0-9]+)?)))?)( *))$")
-	if err != nil {
-		log.Fatal(err)
-	}
-	translateline := func(codeseg code) interface{} {
-			if stringCompile.MatchString(codeseg.code) {
-				return (stringencode(codeseg.code))
-			} else if numberCompile.MatchString(codeseg.code) {
-				if s, err := strconv.ParseFloat(strings.Trim(codeseg.code, " "), 64); err == nil {
-					return (s)
-				} else {
-					log.Fatal(err)
-				}
-			} else {
-				err := "Invalid syntax on line " + fmt.Sprint(codeseg.line+1)
-				log.Fatal(err)
-			}
-      return nil
-		}
+	return Compile
+}
 
-  translate := func(str string) []interface{} {
-		code := split_by_semicolon_and_newline(str)
-		codelen := len(code)
-    output := [](interface{}){}
-		for i := 0; i < codelen; i++ {
-      output = append(output, translateline(code[i]))
-    }
-    return output
-  }
-	script := translate(" 10 ")
-  fmt.Println(script)
+func main() {
+	// load .ar file
+	path := os.Args[1]
+	extention := filepath.Ext(path)
+	if extention == "" {
+		path += ".ar"
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	script := translate(string(data))
+	fmt.Println(script)
+
 }
