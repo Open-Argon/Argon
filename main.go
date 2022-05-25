@@ -14,26 +14,6 @@ type code struct {
 	line int
 }
 
-func split_by_semicolon_and_newline(str string) []code {
-	output := []code{}
-	temp := []byte{}
-	stringlen := len(str)
-	line := 0
-	for i := 0; i < stringlen; i++ {
-		if str[i] == 59 || str[i] == 10 {
-			output = append(output, code{code: string(temp[:]), line: line})
-			if str[i] == 10 {
-				line++
-			}
-			temp = []byte{}
-		} else {
-			temp = append(temp, str[i])
-		}
-	}
-	output = append(output, code{code: string(temp[:]), line: line})
-	return output
-}
-
 func stringencode(str string) string {
 	output := strings.Trim(str, " ")
 	output = output[1 : len(output)-1]

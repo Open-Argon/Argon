@@ -14,7 +14,7 @@ type variable struct {
 
 type whileLoop struct {
 	condition interface{}
-	code      []code
+	code      []interface{}
 }
 
 type setVariable struct {

@@ -1,3 +1,5 @@
 while yes [
-    log(yes)
+    const i = 0;
+    const x = 0;
+    const y = 0;
 ]
