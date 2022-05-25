@@ -9,13 +9,27 @@ import (
 
 var stringCompile = makeRegex("( *)((\"((\\\\([a-z\\\"']))|[^\\\"])*\"))|(('((\\\\([a-z\\'\"]))|[^\\'])*'))( *)")
 var numberCompile = makeRegex("( *)(\\-)?(([0-9]+(\\.[0-9]+)?)(e((\\-|\\+)?([0-9]+(\\.[0-9]+)?)))?)( *)")
+var bracketsCompile = makeRegex("( *)\\(.*\\)( *)")
 var variableOnly = "([a-zA-Z])([a-zA-Z0-9])*"
 var variableTextCompile = makeRegex("( *)" + variableOnly + "( *)")
-var setVariableCompile = makeRegex("( *)(((const|var) ({" + fmt.Sprint(variableTextCompile) + "})(( +)=( +).+)?)|(" + fmt.Sprint(variableTextCompile) + ")(( +)=( +).+))( *)")
+var setVariableCompile = makeRegex("( *)(((const|var) (" + variableOnly + "( *))=( *).+)|(( *)" + variableOnly + "( *))(( *)=( *).+))( *)")
 var skipCompile = makeRegex("( *)(#( *))?")
+var processfunc func(codeseg code) (interface{}, bool)
+
+func init() {
+	processfunc = translateprocess
+}
+
 var translateprocess = func(codeseg code) (interface{}, bool) {
 	if stringCompile.MatchString(codeseg.code) {
 		return (stringencode(codeseg.code)), true
+	} else if bracketsCompile.MatchString(codeseg.code) {
+		shorter := strings.Trim(codeseg.code, " ")
+		shorter = shorter[1 : len(shorter)-1]
+		brackets, ran := processfunc(code{
+			code: shorter,
+			line: codeseg.line})
+		return brackets, ran
 	} else if numberCompile.MatchString(codeseg.code) {
 		if s, err := strconv.ParseFloat(strings.Trim(codeseg.code, " "), 64); err == nil {
 			return s, true
@@ -30,13 +44,26 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 	}
 	return nil, false
 }
-var translateline = func(i int, code []code) (interface{}, int) {
-	codeseg := code[i]
+var translateline = func(i int, codearray []code) (interface{}, int) {
+	codeseg := codearray[i]
 	resp, worked := translateprocess(codeseg)
 	if worked {
 		return resp, i + 1
 	} else if setVariableCompile.MatchString(codeseg.code) {
-
+		VAR := strings.Split(codeseg.code, "=")
+		firstSplit := strings.Split(strings.Trim(VAR[0], " "), " ")
+		variable := firstSplit[len(firstSplit)-1]
+		resp, worked := translateprocess(code{code: VAR[1],
+			line: codeseg.line})
+		if !worked {
+			log.Fatal("invalid value")
+		}
+		fmt.Println(resp)
+		return setVariable{
+			variable: variable,
+			value:    resp,
+			line:     codeseg.line,
+		}, i + 1
 	} else if skipCompile.MatchString(codeseg.code) {
 	} else {
 		err := "Invalid syntax on line " + fmt.Sprint(codeseg.line+1)
@@ -52,7 +79,9 @@ var translate = func(str string) []interface{} {
 	for i := 0; i < codelen; {
 		resp, x := translateline(i, code)
 		i = x
-		output = append(output, resp)
+		if resp != nil {
+			output = append(output, resp)
+		}
 	}
 	return output
 }
