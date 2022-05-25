@@ -1,4 +1,4 @@
-run = ["go", "run", "."]
+run = ["go", "run", ".", "example"]
 entrypoint = "main.go"
 
 [languages.go]
