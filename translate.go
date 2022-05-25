@@ -111,6 +111,10 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 	} else if setVariableCompile.MatchString(codeseg.code) {
 		VAR := strings.Split(codeseg.code, "=")
 		firstSplit := strings.Split(strings.Trim(VAR[0], " "), " ")
+		TYPE := "var"
+		if len(firstSplit) > 1 {
+			TYPE = firstSplit[0]
+		}
 		variable := firstSplit[len(firstSplit)-1]
 		resp, worked := translateprocess(code{code: VAR[1],
 			line: codeseg.line})
@@ -118,6 +122,7 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 			log.Fatal("invalid value")
 		}
 		return setVariable{
+			TYPE:     TYPE,
 			variable: variable,
 			value:    resp,
 			line:     codeseg.line,

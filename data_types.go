@@ -18,6 +18,7 @@ type whileLoop struct {
 }
 
 type setVariable struct {
+	TYPE     string
 	variable string
 	value    interface{}
 	line     int
