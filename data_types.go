@@ -12,6 +12,11 @@ type variable struct {
 	line     int
 }
 
+type whileLoop struct {
+	condition interface{}
+	code      []code
+}
+
 type setVariable struct {
 	variable string
 	value    interface{}

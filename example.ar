@@ -1,1 +1,3 @@
-const var = "hi";
+while yes [
+    log(yes)
+]
