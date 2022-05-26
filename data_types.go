@@ -1,6 +1,6 @@
 package main
 
-type process struct {
+type opperator struct {
 	t    int
 	x    interface{}
 	y    interface{}
@@ -15,6 +15,11 @@ type variable struct {
 type whileLoop struct {
 	condition interface{}
 	code      []interface{}
+}
+type ifstatement struct {
+	condition interface{}
+	TRUE      []interface{}
+	FALSE     []interface{}
 }
 
 type setVariable struct {

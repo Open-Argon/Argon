@@ -10,15 +10,100 @@ import (
 var stringCompile = makeRegex("( *)((\"((\\\\([a-z\\\"']))|[^\\\"])*\"))|(('((\\\\([a-z\\'\"]))|[^\\'])*'))( *)")
 var numberCompile = makeRegex("( *)(\\-)?(([0-9]+(\\.[0-9]+)?)(e((\\-|\\+)?([0-9]+(\\.[0-9]+)?)))?)( *)")
 var whileCompile = makeRegex("( *)(while .+ \\[.*)( *)")
+var ifCompile = makeRegex("( *)(if .+ \\[.*)( *)")
 var openCompile = makeRegex("( *)([a-z]+ .+ \\[.*)( *)")
+var elseCompile = makeRegex("( *)\\] else \\[( *)")
 var closeCompile = makeRegex("( *)\\]( *)")
 var bracketsCompile = makeRegex("( *)\\(.*\\)( *)")
-var variableOnly = "([a-zA-Z])([a-zA-Z0-9])*"
+var variableOnly = "([a-zA-Z_])([a-zA-Z0-9_])*"
 var variableTextCompile = makeRegex("( *)" + variableOnly + "( *)")
 var setVariableCompile = makeRegex("( *)(((const|var) (" + variableOnly + "( *))=( *).+)|(( *)" + variableOnly + "( *))(( *)=( *).+))( *)")
 var skipCompile = makeRegex("( *)(#( *))?")
 var processfunc func(codeseg code) (interface{}, bool)
 var linefunc func(i int, codearray []code) (interface{}, int)
+var opperators = [][]string{
+	{
+		"&&",
+		" and ",
+	}, {
+		"||",
+		" or ",
+	}, {
+		"!@",
+		" not in ",
+		" is not in ",
+		" isnt in ",
+	}, {
+		"@",
+		" in ",
+		" is in ",
+	}, {
+		"<=",
+		" is less than or equal to ",
+		" is smaller than or equal to ",
+	}, {
+		">=",
+		" is bigger than or equal to ",
+		" is more than or equal to ",
+	}, {
+		"<",
+		" is less than ",
+		" is smaller than ",
+	}, {
+		">",
+		" is bigger than ",
+		" is more than ",
+	}, {
+		"!=",
+		" is not ",
+		" is not equal to ",
+		" isnt equal to ",
+		" isnt ",
+		"!==",
+	}, {
+		"==",
+		" equals ",
+		" is equal to ",
+		" is ",
+		"===",
+	}, {
+		" minus ",
+		" subtract ",
+		"-",
+	}, {
+		" plus ",
+		" add ",
+		"+",
+	}, {
+		"!**",
+		"!^",
+		" root ",
+		"√",
+	}, {
+		" to the power of ",
+		"^",
+		"**",
+		"*",
+	}, {
+		"*",
+		" x ",
+		" times ",
+		" multiplied by ",
+	}, {
+		" div ",
+		" floor division of ",
+		" floor divistion ",
+		"//",
+		"$",
+	}, {
+		" mod ",
+		" modulo ",
+		"%",
+	}, {
+		" over ",
+		" divided by ",
+		"/",
+	}}
 
 func init() {
 	processfunc = translateprocess
@@ -59,11 +144,16 @@ func split_by_semicolon_and_newline(str string) []code {
 	return output
 }
 
-var getCodeInIndent = func(i int, codearray []code) []interface{} {
-	var result []interface{}
+var getCodeInIndent = func(i int, codearray []code, isIf bool) ([]code, int) {
+	var result []code
 	indent := 0
-	for true {
-		if closeCompile.MatchString(codearray[i].code) {
+	result = append(result, code{
+		code: strings.SplitN(codearray[i].code, "[", 2)[1],
+		line: codearray[i].line,
+	})
+	i++
+	for {
+		if closeCompile.MatchString(codearray[i].code) || (isIf && elseCompile.MatchString(codearray[i].code)) {
 			indent++
 			if indent >= 0 {
 				break
@@ -71,14 +161,37 @@ var getCodeInIndent = func(i int, codearray []code) []interface{} {
 		} else if openCompile.MatchString(codearray[i].code) {
 			indent--
 		}
-		resp, x := linefunc(i, codearray)
-		result = append(result, resp)
-		i = x
+		result = append(result, codearray[i])
+		i++
 	}
-	return result
+	i++
+	return result, i
 }
 
 var translateprocess = func(codeseg code) (interface{}, bool) {
+
+	for i := 0; i < len(opperators); i++ {
+		for j := 0; j < len(opperators[i]); j++ {
+			split := strings.SplitN(codeseg.code, opperators[i][j], 2)
+			if len(split) == 2 {
+				val1, worked := processfunc(code{code: split[0], line: codeseg.line})
+				if !worked {
+					continue
+				}
+				val2, worked := processfunc(code{code: split[0], line: codeseg.line})
+				if !worked {
+					continue
+				}
+				return opperator{
+					t:    i,
+					x:    val1,
+					y:    val2,
+					line: codeseg.line,
+				}, true
+			}
+		}
+	}
+
 	if stringCompile.MatchString(codeseg.code) {
 		return (stringencode(codeseg.code)), true
 	} else if bracketsCompile.MatchString(codeseg.code) {
@@ -137,16 +250,44 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 		if !worked {
 			log.Fatal("invalid value on line", codeseg.line)
 		}
-		codeoutput := getCodeInIndent(i+1, codearray)
-		first, worked := translateprocess(code{code: split[1],
-			line: codeseg.line})
-		if worked {
-			codeoutput = append([](interface{}){first}, codeoutput...)
+		codedata, x := getCodeInIndent(i, codearray, false)
+		codeoutput := []interface{}{}
+
+		codelen := len(codedata)
+		for i := 0; i < codelen; {
+			resp, x := linefunc(i, codedata)
+			i = x
+			codeoutput = append(codeoutput, resp)
 		}
+
 		return whileLoop{
 			condition: condition,
 			code:      codeoutput,
-		}, i + len(codeoutput) + 2
+		}, x
+	} else if ifCompile.MatchString(codeseg.code) {
+		str := strings.Trim(codeseg.code, " ")
+		strlen := len(str)
+		str = str[5:strlen]
+		split := strings.SplitN(str, "[", 2)
+		condition, worked := translateprocess(code{code: split[0],
+			line: codeseg.line})
+		if !worked {
+			log.Fatal("invalid value on line", codeseg.line)
+		}
+		codedata, x := getCodeInIndent(i, codearray, true)
+		codeoutput := []interface{}{}
+
+		codelen := len(codedata)
+		for i := 0; i < codelen; {
+			resp, x := linefunc(i, codedata)
+			i = x
+			codeoutput = append(codeoutput, resp)
+		}
+
+		return ifstatement{
+			condition: condition,
+			TRUE:      codeoutput,
+		}, x
 	} else if skipCompile.MatchString(codeseg.code) {
 	} else {
 		err := "Invalid syntax on line "
@@ -159,7 +300,9 @@ var translate = func(str string) []interface{} {
 	code := split_by_semicolon_and_newline(str)
 	codelen := len(code)
 	output := [](interface{}){}
-	for i := 0; i < codelen; {
+	i := 0
+	fmt.Println(codelen)
+	for i < codelen {
 		resp, x := translateline(i, code)
 		i = x
 		output = append(output, resp)
