@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -40,6 +39,6 @@ func main() {
 		log.Fatal(err)
 	}
 	script := translate(string(data))
-	fmt.Println(script)
+	run(script)
 
 }

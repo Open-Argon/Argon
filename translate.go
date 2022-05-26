@@ -299,9 +299,8 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 var translate = func(str string) []interface{} {
 	code := split_by_semicolon_and_newline(str)
 	codelen := len(code)
-	output := [](interface{}){}
+	output := []interface{}{}
 	i := 0
-	fmt.Println(codelen)
 	for i < codelen {
 		resp, x := translateline(i, code)
 		i = x

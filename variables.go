@@ -1,17 +1,19 @@
 package main
 
 type variableValue struct {
-	TYPE string
-	VAL  interface{}
-	FUNC bool
+	TYPE   string
+	VAL    interface{}
+	EXISTS interface{}
+	FUNC   bool
 }
 
-var builtins = make(map[string]variableValue)
+var vars = make(map[string]variableValue)
 
 func init() {
-	builtins["cool"] = variableValue{
-		TYPE: "string",
-		VAL:  "hello world",
-		FUNC: false,
+	vars["HW"] = variableValue{
+		TYPE:   "init",
+		EXISTS: true,
+		VAL:    "hello world",
+		FUNC:   false,
 	}
 }
