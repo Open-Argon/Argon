@@ -16,6 +16,7 @@ var elseCompile = makeRegex("( *)\\] else \\[( *)")
 var closeCompile = makeRegex("( *)\\]( *)")
 var bracketsCompile = makeRegex("( *)\\(.*\\)( *)")
 var variableOnly = "([a-zA-Z_])([a-zA-Z0-9_])*"
+var functionCompile = makeRegex("( *)" + variableOnly + "\\(.*\\)( *)")
 var variableTextCompile = makeRegex("( *)" + variableOnly + "( *)")
 var setVariableCompile = makeRegex("( *)(((const|var) (" + variableOnly + "( *))=( *).+)|(( *)" + variableOnly + "( *))(( *)=( *).+))( *)")
 var skipCompile = makeRegex("( *)(#( *))?")
@@ -109,6 +110,32 @@ func init() {
 	linefunc = translateline
 }
 
+func getValuesFromCommas(str string, line int) []any {
+	output := []any{}
+	temp := []byte{}
+	stringlen := len(str)
+	for i := 0; i < stringlen; i++ {
+		if str[i] == 44 {
+			tempstr := string(temp[:])
+			resp, worked := processfunc(code{code: tempstr, line: 0})
+			if worked {
+				output = append(output, resp)
+				temp = []byte{}
+				continue
+			}
+		}
+		temp = append(temp, str[i])
+	}
+	tempstr := string(temp[:])
+	resp, worked := processfunc(code{code: tempstr, line: 0})
+	if worked {
+		output = append(output, resp)
+	} else {
+		log.Fatal("Error: invalid syntax: " + string(temp[:]))
+	}
+	return output
+}
+
 func split_by_semicolon_and_newline(str string) []code {
 	output := []code{}
 	temp := []byte{}
@@ -168,7 +195,6 @@ var getCodeInIndent = func(i int, codearray []code, isIf bool) ([]code, int) {
 }
 
 var translateprocess = func(codeseg code) (interface{}, bool) {
-
 	for i := 0; i < len(opperators); i++ {
 		for j := 0; j < len(opperators[i]); j++ {
 			split := strings.SplitN(codeseg.code, opperators[i][j], 2)
@@ -192,6 +218,16 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 	}
 	if stringCompile.MatchString(codeseg.code) {
 		return (stringencode(codeseg.code)), true
+	} else if functionCompile.MatchString(codeseg.code) {
+		bracketsplit := strings.SplitN(codeseg.code, "(", 2)
+		funcname := strings.Trim(bracketsplit[0], " ")
+		params := strings.SplitN(bracketsplit[1], ")", 2)[0]
+		paramstranslated := getValuesFromCommas(params, codeseg.line)
+		return funcCallType{
+			name: funcname,
+			args: paramstranslated,
+			line: codeseg.line,
+		}, true
 	} else if bracketsCompile.MatchString(codeseg.code) {
 		shorter := strings.Trim(codeseg.code, " ")
 		shorter = shorter[1 : len(shorter)-1]
@@ -246,7 +282,7 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 		condition, worked := translateprocess(code{code: split[0],
 			line: codeseg.line})
 		if !worked {
-			log.Fatal("invalid value on line", codeseg.line)
+			log.Fatal("invalid value on line", codeseg.line+1)
 		}
 		codedata, x := getCodeInIndent(i, codearray, false)
 		codeoutput := []interface{}{}
@@ -270,7 +306,7 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 		condition, worked := translateprocess(code{code: split[0],
 			line: codeseg.line})
 		if !worked {
-			log.Fatal("invalid value on line", codeseg.line)
+			log.Fatal("invalid value on line", codeseg.line+1)
 		}
 		codedata, x := getCodeInIndent(i, codearray, true)
 		codeoutput := []interface{}{}

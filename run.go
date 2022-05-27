@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-var runop func(codeseg interface{}) interface{}
+var runop func(codeseg any) any
 
 func init() {
 	runop = runprocess
@@ -16,7 +16,7 @@ func init() {
 func run(lines []any) {
 	for i := 0; i < len(lines); i++ {
 		if lines[i] != nil {
-			fmt.Println(runprocess(lines[i]))
+			runprocess(lines[i])
 		}
 	}
 }
@@ -30,16 +30,32 @@ func runprocess(codeseg any) any {
 		if myvar.EXISTS != nil {
 			return myvar.VAL
 		}
-		log.Fatal("undecared variable on line " + fmt.Sprint(codeseg.(variable).line))
+		log.Fatal("undecared variable on line " + fmt.Sprint(codeseg.(variable).line+1))
 	case setVariable:
-
+		setVariableVal(codeseg.(setVariable))
+	case funcCallType:
+		return callFunc(codeseg.(funcCallType))
 	}
 	return codeseg
 }
 
+func callFunc(call funcCallType) interface{} {
+	if vars[call.name].EXISTS == nil {
+		log.Fatal("undecared function on line " + fmt.Sprint(call.line+1))
+	} else if vars[call.name].TYPE != "func" && vars[call.name].TYPE != "init" {
+		log.Fatal("cannot call " + vars[call.name].TYPE + " on line " + fmt.Sprint(call.line+1))
+	}
+	argvals := []any{}
+	for i := 0; i < len(call.args); i++ {
+		argvals = append(argvals, runprocess(call.args[i]))
+	}
+	vars[call.name].VAL.(func(...any) any)(argvals...)
+	return nil
+}
+
 func setVariableVal(x setVariable) {
 	variable := vars[x.variable]
-	if variable.EXISTS != nil || variable.TYPE == "var" {
+	if variable.EXISTS == nil || variable.TYPE == "var" {
 		vars[x.variable] = variableValue{
 			TYPE:   x.variable,
 			EXISTS: true,
@@ -47,9 +63,9 @@ func setVariableVal(x setVariable) {
 			FUNC:   false,
 		}
 	} else if variable.EXISTS != nil {
-		log.Fatal("undecared variable on line " + fmt.Sprint(x.line))
+		log.Fatal("undecared variable on line " + fmt.Sprint(x.line+1))
 	} else {
-		log.Fatal("cannot edit " + variable.TYPE + " variable on line " + fmt.Sprint(x.line))
+		log.Fatal("cannot edit " + variable.TYPE + " variable on line " + fmt.Sprint(x.line+1))
 	}
 }
 
@@ -80,6 +96,10 @@ func xiny(x any, y []any) bool {
 	return false
 }
 
+func boolean(x any) bool {
+	return (x != false && x != nil && x != 0 && x != "")
+}
+
 func number(x any) float64 {
 	num, err := strconv.ParseFloat(fmt.Sprint(x), 64)
 	if err != nil {
@@ -101,11 +121,11 @@ func runOperator(opperation opperator) any {
 		}
 	case 1:
 		x := runop(opperation.x)
-		if x != false && x != nil {
+		if boolean(x) {
 			output = x
 		} else {
 			y := runop(opperation.y)
-			if y != false && y != nil {
+			if boolean(y) {
 				output = y
 			} else {
 				output = false

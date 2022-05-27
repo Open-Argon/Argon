@@ -12,6 +12,12 @@ type variable struct {
 	line     int
 }
 
+type funcCallType struct {
+	name string
+	args []interface{}
+	line int
+}
+
 type whileLoop struct {
 	condition interface{}
 	code      []interface{}
