@@ -14,19 +14,7 @@ func init() {
 }
 
 func run(lines []interface{}) {
-	fmt.Println(runprocess(opperator{
-		t: 11,
-		x: opperator{
-			t: 11, x: opperator{
-				t: 11,
-				x: 1e100,
-				y: 5,
-			}, y: " "},
-		y: variable{
-			variable: "HW",
-			line:     10,
-		},
-	}))
+	fmt.Println(runprocess(lines[0]))
 }
 
 func runprocess(codeseg interface{}) interface{} {
@@ -38,6 +26,7 @@ func runprocess(codeseg interface{}) interface{} {
 		if myvar.EXISTS != nil {
 			return myvar.VAL
 		}
+    log.Fatal("undecared variable on line " + fmt.Sprint(codeseg.(variable).line))
 	}
 	return codeseg
 }

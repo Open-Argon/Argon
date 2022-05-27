@@ -178,7 +178,7 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 				if !worked {
 					continue
 				}
-				val2, worked := processfunc(code{code: split[0], line: codeseg.line})
+				val2, worked := processfunc(code{code: split[1], line: codeseg.line})
 				if !worked {
 					continue
 				}
