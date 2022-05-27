@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var stringCompile = makeRegex("( *)((\"((\\\\([a-z\\\"']))|[^\\\"])*\"))|(('((\\\\([a-z\\'\"]))|[^\\'])*'))( *)")
+var stringCompile = makeRegex("(( *)\"((\\\\([a-z\\\"']))|[^\\\"])*\"( *)))|((( *)'((\\\\([a-z\\'\"]))|[^\\'])*'( *))")
 var numberCompile = makeRegex("( *)(\\-)?(([0-9]+(\\.[0-9]+)?)(e((\\-|\\+)?([0-9]+(\\.[0-9]+)?)))?)( *)")
 var whileCompile = makeRegex("( *)(while .+ \\[.*)( *)")
 var ifCompile = makeRegex("( *)(if .+ \\[.*)( *)")
@@ -83,7 +83,6 @@ var opperators = [][]string{
 		" to the power of ",
 		"^",
 		"**",
-		"*",
 	}, {
 		"*",
 		" x ",
@@ -191,7 +190,6 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 			}
 		}
 	}
-
 	if stringCompile.MatchString(codeseg.code) {
 		return (stringencode(codeseg.code)), true
 	} else if bracketsCompile.MatchString(codeseg.code) {
