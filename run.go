@@ -21,6 +21,25 @@ func run(lines []any) {
 	}
 }
 
+func anyToArgon(x any) string {
+	switch x.(type) {
+	case string:
+		return x.(string)
+	case float64:
+		return fmt.Sprint(x)
+	case bool:
+		if x.(bool) {
+			return "yes"
+		} else {
+			return "no"
+		}
+	case nil:
+		return "unknown"
+	default:
+		return fmt.Sprint(x)
+	}
+}
+
 func runprocess(codeseg any) any {
 	switch codeseg.(type) {
 	case opperator:
@@ -30,40 +49,46 @@ func runprocess(codeseg any) any {
 		if myvar.EXISTS != nil {
 			return myvar.VAL
 		}
-		log.Fatal("undecared variable on line " + fmt.Sprint(codeseg.(variable).line+1))
-	case setVariable:
-		setVariableVal(codeseg.(setVariable))
+		log.Fatal("undecared variable " + codeseg.(variable).variable + " on line " + fmt.Sprint(codeseg.(variable).line+1))
 	case funcCallType:
 		return callFunc(codeseg.(funcCallType))
+	case whileLoop:
+		whileloop := codeseg.(whileLoop)
+		for boolean(runop(whileloop.condition)) {
+			run(whileloop.code)
+		}
+	case importType:
+		importMod((codeseg.(importType).path).(string))
+	case setVariable:
+		setVariableVal(codeseg.(setVariable))
 	}
 	return codeseg
 }
 
-func callFunc(call funcCallType) interface{} {
+func callFunc(call funcCallType) any {
 	if vars[call.name].EXISTS == nil {
 		log.Fatal("undecared function on line " + fmt.Sprint(call.line+1))
 	} else if vars[call.name].TYPE != "func" && vars[call.name].TYPE != "init" {
 		log.Fatal("cannot call " + vars[call.name].TYPE + " on line " + fmt.Sprint(call.line+1))
+	} else if vars[call.name].FUNC == false {
+		log.Fatal(call.name + " is not a function on line " + fmt.Sprint(call.line+1))
 	}
 	argvals := []any{}
 	for i := 0; i < len(call.args); i++ {
 		argvals = append(argvals, runprocess(call.args[i]))
 	}
-	vars[call.name].VAL.(func(...any) any)(argvals...)
-	return nil
+	return vars[call.name].VAL.(func(...any) any)(argvals...)
 }
 
 func setVariableVal(x setVariable) {
 	variable := vars[x.variable]
 	if variable.EXISTS == nil || variable.TYPE == "var" {
 		vars[x.variable] = variableValue{
-			TYPE:   x.variable,
+			TYPE:   x.TYPE,
 			EXISTS: true,
-			VAL:    x.value,
+			VAL:    runop(x.value),
 			FUNC:   false,
 		}
-	} else if variable.EXISTS != nil {
-		log.Fatal("undecared variable on line " + fmt.Sprint(x.line+1))
 	} else {
 		log.Fatal("cannot edit " + variable.TYPE + " variable on line " + fmt.Sprint(x.line+1))
 	}
@@ -101,11 +126,20 @@ func boolean(x any) bool {
 }
 
 func number(x any) float64 {
-	num, err := strconv.ParseFloat(fmt.Sprint(x), 64)
-	if err != nil {
-		log.Fatal(err)
+	switch x.(type) {
+	case float64:
+		return x.(float64)
+	case float32:
+		return float64(x.(float32))
+	case int:
+		return float64(x.(int))
+	default:
+		num, err := strconv.ParseFloat(fmt.Sprint(x), 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return num
 	}
-	return num
 }
 
 func runOperator(opperation opperator) any {
@@ -190,7 +224,11 @@ func runOperator(opperation opperator) any {
 	case 16:
 		x := runop(opperation.x)
 		y := runop(opperation.y)
-		output = math.Floor(number(x) / number(y))
+		output = math.Mod(number(x), number(y))
+	case 17:
+		x := runop(opperation.x)
+		y := runop(opperation.y)
+		output = number(x) / number(y)
 	}
 	return output
 }
