@@ -1,4 +1,7 @@
-log(2 to the power of 10, 15 to the power of 3);
-log("WOW.");
-const cool = "very coool :)";
-log(cool);
+import "example.ar"
+log('start')
+var i = 0;
+while i < 100000000 [
+    i = i add 1;
+];
+log('done')

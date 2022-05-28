@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -28,17 +27,5 @@ func makeRegex(str string) *regexp.Regexp {
 }
 
 func main() {
-	// load .ar file
-	path := os.Args[1]
-	extention := filepath.Ext(path)
-	if extention == "" {
-		path += ".ar"
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	script := translate(string(data))
-	run(script)
-
+	importMod(os.Args[1])
 }

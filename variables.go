@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 type variableValue struct {
 	TYPE   string
 	VAL    interface{}
@@ -13,16 +9,29 @@ type variableValue struct {
 
 var vars = make(map[string]variableValue)
 
-func ArgonLog(x ...any) any {
-	fmt.Println(x...)
-	return nil
-}
-
 func init() {
 	vars["log"] = variableValue{
 		TYPE:   "init",
 		EXISTS: true,
 		VAL:    ArgonLog,
+		FUNC:   true,
+	}
+	vars["number"] = variableValue{
+		TYPE:   "init",
+		EXISTS: true,
+		VAL:    ArgonNumber,
+		FUNC:   true,
+	}
+	vars["yes"] = variableValue{
+		TYPE:   "init",
+		EXISTS: true,
+		VAL:    true,
+		FUNC:   false,
+	}
+	vars["no"] = variableValue{
+		TYPE:   "init",
+		EXISTS: true,
+		VAL:    false,
 		FUNC:   false,
 	}
 }

@@ -22,6 +22,10 @@ type whileLoop struct {
 	condition interface{}
 	code      []interface{}
 }
+type importType struct {
+	path interface{}
+	line int
+}
 type ifstatement struct {
 	condition interface{}
 	TRUE      []interface{}
