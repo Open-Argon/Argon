@@ -1,7 +1,8 @@
-import "example.ar"
-log('start')
+import "example.ar";
+log('start');
 var i = 0;
 while i < 100000000 [
     i = i add 1;
 ];
-log('done')
+log('done');
+
