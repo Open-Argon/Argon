@@ -2,8 +2,7 @@ package main
 
 type opperator struct {
 	t    int
-	x    interface{}
-	y    interface{}
+	vals []interface{}
 	line int
 }
 

@@ -34,4 +34,10 @@ func init() {
 		VAL:    false,
 		FUNC:   false,
 	}
+	vars["unknown"] = variableValue{
+		TYPE:   "init",
+		EXISTS: true,
+		VAL:    nil,
+		FUNC:   false,
+	}
 }
