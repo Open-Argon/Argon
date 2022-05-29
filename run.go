@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"reflect"
 	"strconv"
 )
 
@@ -35,6 +36,8 @@ func anyToArgon(x any) string {
 		}
 	case nil:
 		return "unknown"
+	case variable:
+		return x.(variable).variable
 	default:
 		return fmt.Sprint(x)
 	}
@@ -47,7 +50,11 @@ func runprocess(codeseg any) any {
 	case variable:
 		myvar := vars[codeseg.(variable).variable]
 		if myvar.EXISTS != nil {
-			return myvar.VAL
+			if myvar.TYPE != "func" && myvar.TYPE != "init_function" {
+				return myvar.VAL
+			} else {
+				return codeseg
+			}
 		}
 		log.Fatal("undecared variable " + codeseg.(variable).variable + " on line " + fmt.Sprint(codeseg.(variable).line+1))
 	case funcCallType:
@@ -74,28 +81,35 @@ func runprocess(codeseg any) any {
 
 func callFunc(call funcCallType) any {
 	if vars[call.name].EXISTS == nil {
-		log.Fatal("undecared function on line " + fmt.Sprint(call.line+1))
-	} else if vars[call.name].TYPE != "func" && vars[call.name].TYPE != "init" {
-		log.Fatal("cannot call " + vars[call.name].TYPE + " on line " + fmt.Sprint(call.line+1))
-	} else if vars[call.name].FUNC == false {
-		log.Fatal(call.name + " is not a function on line " + fmt.Sprint(call.line+1))
+		log.Fatal("undecared function '" + call.name + "' on line " + fmt.Sprint(call.line+1))
 	}
+	callable := call
+	for vars[callable.name].TYPE != "func" && vars[callable.name].TYPE != "init_function" && fmt.Sprint(reflect.TypeOf(vars[callable.name].VAL)) == "main.variable" {
+		callable = funcCallType{name: vars[callable.name].VAL.(variable).variable, args: callable.args, line: callable.line}
+	}
+	if vars[callable.name].TYPE != "func" && vars[callable.name].TYPE != "init_function" {
+		log.Fatal("'" + call.name + "' is not a function on line " + fmt.Sprint(call.line+1))
+	}
+
 	argvals := []any{}
-	for i := 0; i < len(call.args); i++ {
-		argvals = append(argvals, runprocess(call.args[i]))
+	for i := 0; i < len(callable.args); i++ {
+		argvals = append(argvals, runprocess(callable.args[i]))
 	}
-	return vars[call.name].VAL.(func(...any) any)(argvals...)
+
+	return vars[callable.name].VAL.(func(...any) any)(argvals...)
 }
 
 func setVariableVal(x setVariable) {
 	variable := vars[x.variable]
-	if variable.EXISTS == nil || variable.TYPE == "var" {
+	if variable.EXISTS == nil {
 		vars[x.variable] = variableValue{
 			TYPE:   x.TYPE,
 			EXISTS: true,
 			VAL:    runop(x.value),
 			FUNC:   false,
 		}
+	} else if variable.TYPE == "var" {
+		variable.VAL = runop(x.value)
 	} else {
 		log.Fatal("cannot edit " + variable.TYPE + " variable on line " + fmt.Sprint(x.line+1))
 	}

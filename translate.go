@@ -9,7 +9,7 @@ import (
 
 var anyAndNewline = "((.)|(\\n))"
 var variableOnly = "([a-zA-Z_])([a-zA-Z0-9_])*"
-var stringCompile = makeRegex("(( *)\"((\\\\([a-z\\\"'`]))|[^\\\"])*\"( *)))|((( *)'((\\\\([a-z\\'\"`]))|[^\\'])*'( *))|(( *)(`(\\\\[a-z\\\"'`\\n]|[^\\`])*`)( *))")
+var stringCompile = makeRegex("(( *)\"((\\\\([a-z\\\"'`]))|[^\\\"])*\"( *))|(( *)'((\\\\([a-z\\'\"`]))|[^\\'])*'( *))|(( *)(`(\\\\[a-z\\\"'`\\n]|[^\\`])*`)( *))")
 var numberCompile = makeRegex("( *)(\\-)?(([0-9]+(\\.[0-9]+)?)(e((\\-|\\+)?([0-9]+(\\.[0-9]+)?)))?)( *)")
 var whileCompile = makeRegex("( *)(while " + anyAndNewline + "+ \\[.*)( *)")
 var subCompile = makeRegex("( *)(sub " + variableOnly + "\\(" + anyAndNewline + "+\\) \\[.*)( *)")
@@ -131,11 +131,13 @@ func getValuesFromCommas(str string, line int) ([]any, bool) {
 		temp = append(temp, str[i])
 	}
 	tempstr := string(temp[:])
-	resp, worked := processfunc(code{code: tempstr, line: 0})
-	if worked {
-		output = append(output, resp)
-	} else {
-		return nil, false
+	if tempstr != "" {
+		resp, worked := processfunc(code{code: tempstr, line: 0})
+		if worked {
+			output = append(output, resp)
+		} else {
+			return nil, false
+		}
 	}
 	return output, true
 }

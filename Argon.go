@@ -27,5 +27,9 @@ func makeRegex(str string) *regexp.Regexp {
 }
 
 func main() {
-	importMod(os.Args[1])
+	if len(os.Args) == 1 {
+		shell()
+	} else {
+		importMod(os.Args[1])
+	}
 }

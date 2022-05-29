@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,7 +19,6 @@ func importMod(path string) {
 	}
 	exPath := filepath.Dir(ex)
 	path = filepath.Join(exPath, path)
-	fmt.Println(path)
 	if xiny(path, imported) {
 		return
 	}
@@ -29,6 +27,9 @@ func importMod(path string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	script := translate(string(data))
-	run(script)
+	runStr(string(data))
+}
+
+func runStr(str string) {
+	run(translate(str))
 }

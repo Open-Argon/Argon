@@ -185,3 +185,6 @@ Run a file:
 Run the shell:
 
 - run the Argon executable without any parameters, (e.g. `$ argon`)
+
+# License
+MIT License

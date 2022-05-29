@@ -1,10 +1,7 @@
-if yes [
-    log("cool")
+const name = input('name: ')
+const age = whole(input('age: '))
+if (age < 18) [
+    log('hello, '+name+'! you are '+age+' years old. You too young to vote!')
 ] else [
+    log('hello, '+name+'! you are '+age+' years old. You can vote!')
 ]
-log('done')
-log('done')
-log('done')
-log('done')
-log('done')
-log('done')
