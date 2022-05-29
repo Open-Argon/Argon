@@ -8,16 +8,18 @@ import (
 )
 
 var anyAndNewline = "((.)|(\\n))"
+var variableOnly = "([a-zA-Z_])([a-zA-Z0-9_])*"
 var stringCompile = makeRegex("(( *)\"((\\\\([a-z\\\"'`]))|[^\\\"])*\"( *)))|((( *)'((\\\\([a-z\\'\"`]))|[^\\'])*'( *))|(( *)(`(\\\\[a-z\\\"'`\\n]|[^\\`])*`)( *))")
 var numberCompile = makeRegex("( *)(\\-)?(([0-9]+(\\.[0-9]+)?)(e((\\-|\\+)?([0-9]+(\\.[0-9]+)?)))?)( *)")
 var whileCompile = makeRegex("( *)(while " + anyAndNewline + "+ \\[.*)( *)")
-var ifCompile = makeRegex("( *)(if .+ \\[.*)( *)")
+var subCompile = makeRegex("( *)(sub " + variableOnly + "\\(" + anyAndNewline + "+\\) \\[.*)( *)")
+var ifCompile = makeRegex("( *)(if .+ \\[" + anyAndNewline + "*)( *)")
+var elseifCompile = makeRegex("( *)(\\] else if .+ \\[" + anyAndNewline + "*)( *)")
 var openCompile = makeRegex("( *)([a-z]+ " + anyAndNewline + "+ \\[.*)( *)")
-var elseCompile = makeRegex("( *)\\] else \\[( *)")
+var elseCompile = makeRegex("( *)\\] else \\[" + anyAndNewline + "*( *)")
 var closeCompile = makeRegex("( *)\\]( *)")
 var importCompile = makeRegex("( *)import " + anyAndNewline + "+( *)")
 var bracketsCompile = makeRegex("( *)\\(" + anyAndNewline + "*\\)( *)")
-var variableOnly = "([a-zA-Z_])([a-zA-Z0-9_])*"
 var functionCompile = makeRegex("( *)" + variableOnly + "\\(" + anyAndNewline + "*\\)( *)")
 var variableTextCompile = makeRegex("( *)" + variableOnly + "( *)")
 var setVariableCompile = makeRegex("( *)(((const|var) (" + variableOnly + "( *))=( *).+)|(( *)" + variableOnly + "( *))(( *)=( *).+))( *)")
@@ -192,7 +194,7 @@ var getCodeInIndent = func(i int, codearray []code, isIf bool) ([]code, int) {
 	})
 	i++
 	for {
-		if closeCompile.MatchString(codearray[i].code) || (isIf && elseCompile.MatchString(codearray[i].code)) {
+		if closeCompile.MatchString(codearray[i].code) || (isIf && (elseCompile.MatchString(codearray[i].code) || elseifCompile.MatchString(codearray[i].code))) {
 			indent++
 			if indent >= 0 {
 				break
@@ -212,21 +214,31 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 		for j := 0; j < len(opperators[i]); j++ {
 			split := strings.Split(codeseg.code, opperators[i][j])
 			if len(split) > 1 {
+				vals := []interface{}{}
+				current := 0
 				for k := 0; k < len(split); k++ {
-					x := strings.Join(split[:k], opperators[i][j])
-					y := strings.Join(split[k:], opperators[i][j])
-					val1, worked := processfunc(code{code: x, line: codeseg.line})
-					if !worked {
-						continue
+					currentstr := strings.Join(split[current:k], opperators[i][j])
+					val, worked := processfunc(code{
+						code: currentstr,
+						line: codeseg.line,
+					})
+					if worked {
+						vals = append(vals, val)
+						current = k
 					}
-					val2, worked := processfunc(code{code: y, line: codeseg.line})
-					if !worked {
-						continue
+				}
+				if len(vals) >= 1 {
+					currentstr := strings.Join(split[current:], opperators[i][j])
+					val, worked := processfunc(code{
+						code: currentstr,
+						line: codeseg.line,
+					})
+					if worked {
+						vals = append(vals, val)
 					}
 					return opperator{
 						t:    i,
-						x:    val1,
-						y:    val2,
+						vals: vals,
 						line: codeseg.line,
 					}, true
 				}
@@ -318,20 +330,10 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 			condition: condition,
 			code:      codeoutput,
 		}, x
-	} else if importCompile.MatchString(codeseg.code) {
-		str := strings.Trim(codeseg.code, " ")
-		path, worked := processfunc(code{code: str[7:], line: codeseg.line})
-		if !worked {
-			log.Fatal("invalid import path on line ", codeseg.line+1)
-		}
-		return importType{
-			path: path,
-			line: codeseg.line,
-		}, i + 1
 	} else if ifCompile.MatchString(codeseg.code) {
 		str := strings.Trim(codeseg.code, " ")
 		strlen := len(str)
-		str = str[5:strlen]
+		str = str[2:strlen]
 		split := strings.SplitN(str, "[", 2)
 		condition, worked := translateprocess(code{code: split[0],
 			line: codeseg.line})
@@ -347,11 +349,34 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 			i = x
 			codeoutput = append(codeoutput, resp)
 		}
+		elsecode := []any{}
+		elsecodelen := 0
+		if elseCompile.MatchString(codearray[x-1].code) {
+			codedata, x := getCodeInIndent(x-1, codearray, false)
+			elsecodelen = x - 3
+			codelen := len(codedata)
+			for i := 0; i < codelen; {
+				resp, x := linefunc(i, codedata)
+				i = x
+				elsecode = append(elsecode, resp)
+			}
+		}
 
 		return ifstatement{
 			condition: condition,
 			TRUE:      codeoutput,
-		}, x
+			FALSE:     elsecode,
+		}, x + elsecodelen
+	} else if importCompile.MatchString(codeseg.code) {
+		str := strings.Trim(codeseg.code, " ")
+		path, worked := processfunc(code{code: str[7:], line: codeseg.line})
+		if !worked {
+			log.Fatal("invalid import path on line ", codeseg.line+1)
+		}
+		return importType{
+			path: path,
+			line: codeseg.line,
+		}, i + 1
 	} else if skipCompile.MatchString(codeseg.code) {
 	} else {
 		err := "Invalid syntax on line "

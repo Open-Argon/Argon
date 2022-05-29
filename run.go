@@ -57,6 +57,13 @@ func runprocess(codeseg any) any {
 		for boolean(runop(whileloop.condition)) {
 			run(whileloop.code)
 		}
+	case ifstatement:
+		iff := codeseg.(ifstatement)
+		if boolean(runop(iff.condition)) {
+			run(iff.TRUE)
+		} else {
+			run(iff.FALSE)
+		}
 	case importType:
 		importMod((codeseg.(importType).path).(string))
 	case setVariable:
@@ -133,6 +140,12 @@ func number(x any) float64 {
 		return float64(x.(float32))
 	case int:
 		return float64(x.(int))
+	case bool:
+		if x.(bool) {
+			return 1
+		} else {
+			return 0
+		}
 	default:
 		num, err := strconv.ParseFloat(fmt.Sprint(x), 64)
 		if err != nil {
@@ -144,91 +157,139 @@ func number(x any) float64 {
 
 func runOperator(opperation opperator) any {
 	var output any
-	switch opperation.t {
-	case 0:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		if (x != false && x != nil) && (y != false && y != nil) {
-			output = y
-		} else {
-			output = false
-		}
-	case 1:
-		x := runop(opperation.x)
-		if boolean(x) {
-			output = x
-		} else {
-			y := runop(opperation.y)
-			if boolean(y) {
-				output = y
+	for i := 0; i < len(opperation.vals); i++ {
+		switch opperation.t {
+		case 0:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
 			} else {
-				output = false
+				if boolean(output) && boolean(x) {
+					output = x
+				} else {
+					output = false
+					break
+				}
+			}
+		case 1:
+			x := runop(opperation.vals[i])
+			if boolean(x) {
+				output = x
+				break
+			}
+		case 2:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = xiny(output, x.([]any))
+			}
+		case 3:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = !xiny(output, x.([]interface{}))
+			}
+		case 4:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = (number(output) <= number(x))
+			}
+		case 5:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = (number(output) >= number(x))
+			}
+		case 6:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = (number(output) < number(x))
+			}
+		case 7:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = (number(output) > number(x))
+			}
+		case 8:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = (output != x)
+			}
+		case 9:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = (output == x)
+			}
+		case 10:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = (number(output) - number(x))
+			}
+		case 11:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = dynamicAdd(output, x)
+			}
+		case 12:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = math.Pow(number(output), 1/number(x))
+			}
+		case 13:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = math.Pow(number(output), number(x))
+			}
+		case 14:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = (number(output) * number(x))
+			}
+		case 15:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = math.Floor(number(output) / number(x))
+			}
+		case 16:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = math.Mod(number(output), number(x))
+			}
+		case 17:
+			x := runop(opperation.vals[i])
+			if output == nil {
+				output = x
+			} else {
+				output = (number(output) / number(x))
 			}
 		}
-	case 2:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = xiny(x, y.([]interface{}))
-	case 3:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = !xiny(x, y.([]interface{}))
-	case 4:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = (number(x) <= number(y))
-	case 5:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = (number(x) >= number(y))
-	case 6:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = (number(x) < number(y))
-	case 7:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = (number(x) > number(y))
-	case 8:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = (x != y)
-	case 9:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = (x == y)
-	case 10:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = (number(x) - number(y))
-	case 11:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = dynamicAdd(x, y)
-	case 12:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = math.Pow(number(x), 1/number(y))
-	case 13:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = math.Pow(number(x), number(y))
-	case 14:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = number(x) * number(y)
-	case 15:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = math.Floor(number(x) / number(y))
-	case 16:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = math.Mod(number(x), number(y))
-	case 17:
-		x := runop(opperation.x)
-		y := runop(opperation.y)
-		output = number(x) / number(y)
 	}
 	return output
 }

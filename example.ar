@@ -1,8 +1,10 @@
-import "example.ar";
-log('start');
-var i = 0;
-while i < 100000000 [
-    i = i add 1;
-];
-log('done');
-
+if yes [
+    log("cool")
+] else [
+]
+log('done')
+log('done')
+log('done')
+log('done')
+log('done')
+log('done')
