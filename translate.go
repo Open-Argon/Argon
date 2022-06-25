@@ -11,10 +11,10 @@ var anyAndNewline = "((.)|(\\n))"
 var variableOnly = "([a-zA-Z_])([a-zA-Z0-9_])*"
 var stringCompile = makeRegex("(( *)\"((\\\\([a-z\\\"'`]))|[^\\\"])*\"( *))|(( *)'((\\\\([a-z\\'\"`]))|[^\\'])*'( *))|(( *)(`(\\\\[a-z\\\"'`\\n]|[^\\`])*`)( *))")
 var numberCompile = makeRegex("( *)(\\-)?(([0-9]+(\\.[0-9]+)?)(e((\\-|\\+)?([0-9]+(\\.[0-9]+)?)))?)( *)")
-var whileCompile = makeRegex("( *)(while " + anyAndNewline + "+ \\[.*)( *)")
-var subCompile = makeRegex("( *)(sub " + variableOnly + "\\(" + anyAndNewline + "+\\) \\[.*)( *)")
-var ifCompile = makeRegex("( *)(if .+ \\[" + anyAndNewline + "*)( *)")
-var elseifCompile = makeRegex("( *)(\\] else if .+ \\[" + anyAndNewline + "*)( *)")
+var whileCompile = makeRegex("( *)(while " + anyAndNewline + "+ \\[" + anyAndNewline + "*)( *)")
+var subCompile = makeRegex("( *)(sub " + variableOnly + "\\(" + anyAndNewline + "*\\) \\[" + anyAndNewline + "*)( *)")
+var ifCompile = makeRegex("( *)(if " + anyAndNewline + "+ \\[" + anyAndNewline + "*)( *)")
+var elseifCompile = makeRegex("( *)(\\] else if " + anyAndNewline + "+ \\[" + anyAndNewline + "*)( *)")
 var openCompile = makeRegex("( *)([a-z]+ " + anyAndNewline + "+ \\[.*)( *)")
 var elseCompile = makeRegex("( *)\\] else \\[" + anyAndNewline + "*( *)")
 var closeCompile = makeRegex("( *)\\]( *)")
@@ -267,7 +267,8 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 		shorter = shorter[1 : len(shorter)-1]
 		brackets, ran := processfunc(code{
 			code: shorter,
-			line: codeseg.line})
+			line: codeseg.line,
+		})
 		return brackets, ran
 	} else if numberCompile.MatchString(codeseg.code) {
 		if s, err := strconv.ParseFloat(strings.Trim(codeseg.code, " "), 64); err == nil {
@@ -369,6 +370,16 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 			TRUE:      codeoutput,
 			FALSE:     elsecode,
 		}, x + elsecodelen
+	} else if subCompile.MatchString(codeseg.code) {
+		sub := strings.Trim(codeseg.code, " ")
+		sub = sub[3:]
+		sub = strings.Trim(sub, " ")
+		fmt.Println(sub)
+		return ifstatement{
+			condition: []interface{}{},
+			TRUE:      []interface{}{},
+			FALSE:     []interface{}{},
+		}, i + 1
 	} else if importCompile.MatchString(codeseg.code) {
 		str := strings.Trim(codeseg.code, " ")
 		path, worked := processfunc(code{code: str[7:], line: codeseg.line})

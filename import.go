@@ -31,5 +31,6 @@ func importMod(path string) {
 }
 
 func runStr(str string) {
-	run(translate(str))
+	translated := translate(str)
+	run(translated)
 }
