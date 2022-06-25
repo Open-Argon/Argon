@@ -37,3 +37,9 @@ type setVariable struct {
 	value    interface{}
 	line     int
 }
+
+type functionSet struct {
+	name   string
+	params []string
+	line   int
+}
