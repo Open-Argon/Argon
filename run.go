@@ -8,18 +8,21 @@ import (
 	"strconv"
 )
 
-var runop func(codeseg any) any
+var runop func(codeseg any) (any, any)
 
 func init() {
 	runop = runprocess
 }
 
-func run(lines []any) {
+func run(lines []any) [][]any {
+	output := ([][]any{})
 	for i := 0; i < len(lines); i++ {
 		if lines[i] != nil {
-			runprocess(lines[i])
+			val, ty := runprocess(lines[i])
+			output = append(output, []any{val, ty})
 		}
 	}
+	return output
 }
 
 func anyToArgon(x any) string {
@@ -43,30 +46,32 @@ func anyToArgon(x any) string {
 	}
 }
 
-func runprocess(codeseg any) any {
+func runprocess(codeseg any) (any, any) {
 	switch codeseg.(type) {
 	case opperator:
-		return runOperator(codeseg.(opperator))
+		return runOperator(codeseg.(opperator)), "opperator"
 	case variable:
 		myvar := vars[codeseg.(variable).variable]
 		if myvar.EXISTS != nil {
 			if myvar.TYPE != "func" && myvar.TYPE != "init_function" {
-				return myvar.VAL
+				return myvar.VAL, nil
 			} else {
-				return codeseg
+				return codeseg, nil
 			}
 		}
 		log.Fatal("undecared variable " + codeseg.(variable).variable + " on line " + fmt.Sprint(codeseg.(variable).line+1))
 	case funcCallType:
-		return callFunc(codeseg.(funcCallType))
+		return callFunc(codeseg.(funcCallType)), "return"
 	case whileLoop:
 		whileloop := codeseg.(whileLoop)
-		for boolean(runop(whileloop.condition)) {
+		resp, _ := runop(whileloop.condition)
+		for boolean(resp) {
 			run(whileloop.code)
 		}
 	case ifstatement:
 		iff := codeseg.(ifstatement)
-		if boolean(runop(iff.condition)) {
+		resp, _ := runop(iff.condition)
+		if boolean(resp) {
 			run(iff.TRUE)
 		} else {
 			run(iff.FALSE)
@@ -75,8 +80,10 @@ func runprocess(codeseg any) any {
 		importMod((codeseg.(importType).path).(string))
 	case setVariable:
 		setVariableVal(codeseg.(setVariable))
+	case setFunction:
+		setFunctionVal(codeseg.(setFunction))
 	}
-	return codeseg
+	return codeseg, nil
 }
 
 func callFunc(call funcCallType) any {
@@ -93,25 +100,49 @@ func callFunc(call funcCallType) any {
 
 	argvals := []any{}
 	for i := 0; i < len(callable.args); i++ {
-		argvals = append(argvals, runprocess(callable.args[i]))
+		resp, _ := runprocess(callable.args[i])
+		argvals = append(argvals, resp)
 	}
 
-	return vars[callable.name].VAL.(func(...any) any)(argvals...)
+	if vars[callable.name].FUNC {
+		return vars[callable.name].VAL.(func(...any) any)(argvals...)
+	} else {
+		run(vars[callable.name].VAL.(setFunction).code)
+		return nil
+	}
 }
 
 func setVariableVal(x setVariable) {
 	variable := vars[x.variable]
 	if variable.EXISTS == nil {
+		resp, _ := runop(x.value)
 		vars[x.variable] = variableValue{
 			TYPE:   x.TYPE,
 			EXISTS: true,
-			VAL:    runop(x.value),
+			VAL:    resp,
 			FUNC:   false,
 		}
 	} else if variable.TYPE == "var" {
-		variable.VAL = runop(x.value)
+		variable.VAL, _ = runop(x.value)
 	} else {
 		log.Fatal("cannot edit " + variable.TYPE + " variable on line " + fmt.Sprint(x.line+1))
+	}
+}
+
+func setFunctionVal(x setFunction) {
+	variable := vars[x.name]
+	if vars[x.name].EXISTS == nil {
+		vars[x.name] = variableValue{
+			TYPE:   "func",
+			EXISTS: true,
+			VAL:    x,
+			FUNC:   false,
+		}
+	} else if vars[x.name].TYPE == "func" {
+		variable.VAL = x
+		variable.FUNC = false
+	} else {
+		log.Fatal("cannot edit " + vars[x.name].TYPE + " variable on line " + fmt.Sprint(x.line+1))
 	}
 }
 
@@ -174,7 +205,7 @@ func runOperator(opperation opperator) any {
 	for i := 0; i < len(opperation.vals); i++ {
 		switch opperation.t {
 		case 0:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
@@ -186,118 +217,118 @@ func runOperator(opperation opperator) any {
 				}
 			}
 		case 1:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if boolean(x) {
 				output = x
 				break
 			}
 		case 2:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = xiny(output, x.([]any))
 			}
 		case 3:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = !xiny(output, x.([]interface{}))
 			}
 		case 4:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) <= number(x))
 			}
 		case 5:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) >= number(x))
 			}
 		case 6:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) < number(x))
 			}
 		case 7:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) > number(x))
 			}
 		case 8:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = (output != x)
 			}
 		case 9:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = (output == x)
 			}
 		case 10:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) - number(x))
 			}
 		case 11:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = dynamicAdd(output, x)
 			}
 		case 12:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = math.Pow(number(output), 1/number(x))
 			}
 		case 13:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = math.Pow(number(output), number(x))
 			}
 		case 14:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) * number(x))
 			}
 		case 15:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = math.Floor(number(output) / number(x))
 			}
 		case 16:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
 				output = math.Mod(number(output), number(x))
 			}
 		case 17:
-			x := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {

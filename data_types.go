@@ -21,10 +21,12 @@ type whileLoop struct {
 	condition interface{}
 	code      []interface{}
 }
+
 type importType struct {
 	path interface{}
 	line int
 }
+
 type ifstatement struct {
 	condition interface{}
 	TRUE      []interface{}
@@ -36,6 +38,13 @@ type setVariable struct {
 	variable string
 	value    interface{}
 	line     int
+}
+
+type setFunction struct {
+	name string
+	args []string
+	code []interface{}
+	line int
 }
 
 type functionSet struct {

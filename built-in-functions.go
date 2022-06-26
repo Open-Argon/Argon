@@ -63,3 +63,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.`)
 	return nil
 }
+
+func exec(code string) any {
+	runStr(code)
+	return nil
+}
+
+func eval(opperator string) any {
+	resp, _ := translateprocess(code{
+		code: opperator,
+		line: 0,
+	})
+	return resp
+}

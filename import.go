@@ -30,7 +30,7 @@ func importMod(path string) {
 	runStr(string(data))
 }
 
-func runStr(str string) {
+func runStr(str string) [][]any {
 	translated := translate(str)
-	run(translated)
+	return run(translated)
 }
