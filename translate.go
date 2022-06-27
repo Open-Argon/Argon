@@ -18,7 +18,7 @@ var elseifCompile = makeRegex("( *)(\\] else if " + anyAndNewline + "+ \\[" + an
 var openCompile = makeRegex("( *)(" + anyAndNewline + "+( )+\\[" + anyAndNewline + "*)( *)")
 var elseCompile = makeRegex("( *)\\] else \\[" + anyAndNewline + "*( *)")
 var closeCompile = makeRegex("( *)" + anyAndNewline + "*\\]" + anyAndNewline + "*( *)")
-var switchCloseCompile = makeRegex("( *)" + anyAndNewline + "*\\]" + anyAndNewline + "*[" + anyAndNewline + "*( *)")
+var switchCloseCompile = makeRegex("( *)" + anyAndNewline + "*\\]" + anyAndNewline + "*\\[" + anyAndNewline + "*( *)")
 var importCompile = makeRegex("( *)import " + anyAndNewline + "+( *)")
 var bracketsCompile = makeRegex("( *)\\(" + anyAndNewline + "*\\)( *)")
 var functionCompile = makeRegex("( *)" + variableOnly + "\\(" + anyAndNewline + "*\\)( *)")
@@ -82,15 +82,6 @@ var opperators = [][]string{
 		" add ",
 		"+",
 	}, {
-		"!**",
-		"!^",
-		" root ",
-		"√",
-	}, {
-		" to the power of ",
-		"^",
-		"**",
-	}, {
 		"*",
 		" x ",
 		" times ",
@@ -109,6 +100,15 @@ var opperators = [][]string{
 		" over ",
 		" divided by ",
 		"/",
+	}, {
+		"!**",
+		"!^",
+		" root ",
+		"√",
+	}, {
+		" to the power of ",
+		"^",
+		"**",
 	}}
 
 func init() {

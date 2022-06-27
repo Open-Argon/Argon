@@ -54,9 +54,9 @@ func runprocess(codeseg any) (any, any) {
 		myvar := vars[codeseg.(variable).variable]
 		if myvar.EXISTS != nil {
 			if myvar.TYPE != "func" && myvar.TYPE != "init_function" {
-				return myvar.VAL, nil
+				return myvar.VAL, "variable"
 			} else {
-				return codeseg, nil
+				return codeseg, "function"
 			}
 		}
 		log.Fatal("undecared variable " + codeseg.(variable).variable + " on line " + fmt.Sprint(codeseg.(variable).line+1))
@@ -76,14 +76,18 @@ func runprocess(codeseg any) (any, any) {
 		} else {
 			run(iff.FALSE)
 		}
+		return nil, nil
 	case importType:
 		importMod((codeseg.(importType).path).(string))
+		return nil, nil
 	case setVariable:
 		setVariableVal(codeseg.(setVariable))
+		return nil, nil
 	case setFunction:
 		setFunctionVal(codeseg.(setFunction))
+		return nil, nil
 	}
-	return codeseg, nil
+	return codeseg, "value"
 }
 
 func callFunc(call funcCallType) any {
@@ -297,42 +301,42 @@ func runOperator(opperation opperator) any {
 			if output == nil {
 				output = x
 			} else {
-				output = math.Pow(number(output), 1/number(x))
+				output = (number(output) * number(x))
 			}
 		case 13:
 			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
-				output = math.Pow(number(output), number(x))
+				output = math.Floor(number(output) / number(x))
 			}
 		case 14:
 			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
-				output = (number(output) * number(x))
+				output = math.Mod(number(output), number(x))
 			}
 		case 15:
 			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
-				output = math.Floor(number(output) / number(x))
+				output = (number(output) / number(x))
 			}
 		case 16:
 			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
-				output = math.Mod(number(output), number(x))
+				output = math.Pow(number(output), 1/number(x))
 			}
 		case 17:
 			x, _ := runop(opperation.vals[i])
 			if output == nil {
 				output = x
 			} else {
-				output = (number(output) / number(x))
+				output = math.Pow(number(output), number(x))
 			}
 		}
 	}
