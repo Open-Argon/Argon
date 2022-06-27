@@ -16,3 +16,7 @@ func err(err string) {
 func catchError(f func(any)) {
 	catch = append(catch, f)
 }
+
+func endCatch() {
+	catch = catch[:len(catch)-1]
+}
