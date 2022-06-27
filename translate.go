@@ -25,7 +25,8 @@ var functionCompile = makeRegex("( *)" + variableOnly + "\\(" + anyAndNewline + 
 var variableTextCompile = makeRegex("( *)" + variableOnly + "( *)")
 var variableonlyCompile = makeRegex(variableOnly)
 var setVariableCompile = makeRegex("( *)(((const|var) (" + variableOnly + "( *))=( *).+)|(( *)" + variableOnly + "( *))(( *)=( *).+))( *)")
-var skipCompile = makeRegex("( *)(#( *))?")
+var returnStatementCompile = makeRegex("( *)(return( )+" + anyAndNewline + "*)( *)")
+var skipCompile = makeRegex("( *)(#(.*))?")
 var processfunc func(codeseg code) (interface{}, bool)
 var linefunc func(i int, codearray []code) (interface{}, int)
 var opperators = [][]string{
@@ -241,7 +242,7 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 		for j := 0; j < len(opperators[i]); j++ {
 			split := strings.Split(codeseg.code, opperators[i][j])
 			if len(split) > 1 {
-				vals := []interface{}{}
+				vals := []any{}
 				current := 0
 				for k := 0; k < len(split); k++ {
 					currentstr := strings.Join(split[current:k], opperators[i][j])
@@ -262,6 +263,8 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 					})
 					if worked {
 						vals = append(vals, val)
+					} else {
+						return nil, false
 					}
 					return opperator{
 						t:    i,
@@ -429,6 +432,7 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 			line: codeseg.line,
 		}, i + 1
 	} else if skipCompile.MatchString(codeseg.code) {
+
 	} else {
 		err := "Invalid syntax on line "
 		log.Fatal("\n\nLine " + fmt.Sprint(codeseg.line+1) + ": " + codeseg.code + "\n" + err + "\n\n")

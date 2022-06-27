@@ -1,11 +1,12 @@
-sub my_cool_function() [
-    log("Hello, world!")
-    log("Hello, world!")
-    if yes [
-        log("Hello, world!")
-        if yes [
-            log("Hello, world!")
-        ]
-    ]
-]
-my_cool_function()
+import 'maths';
+
+log('whats the radius of the circle?')
+var radius = number(input('radius: '))
+
+var area = PI times radius to the power of 2
+var diameter = PI times radius
+
+log()
+
+log('the area of the circle is:', area)
+log('the diameter of the circle is:', diameter)
