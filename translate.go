@@ -25,7 +25,8 @@ var functionCompile = makeRegex("( *)" + variableOnly + "\\(" + anyAndNewline + 
 var variableTextCompile = makeRegex("( *)" + variableOnly + "( *)")
 var variableonlyCompile = makeRegex(variableOnly)
 var setVariableCompile = makeRegex("( *)(((const|var) (" + variableOnly + "( *))=( *).+)|(( *)" + variableOnly + "( *))(( *)=( *).+))( *)")
-var returnStatementCompile = makeRegex("( *)(return( )+" + anyAndNewline + "*)( *)")
+var returnStatementCompile = makeRegex("( *)(return(( )+" + anyAndNewline + "*)?)( *)")
+var breakStatementCompile = makeRegex("( *)break( *)")
 var skipCompile = makeRegex("( *)(#(.*))?")
 var processfunc func(codeseg code) (interface{}, bool)
 var linefunc func(i int, codearray []code) (interface{}, int)
@@ -145,6 +146,61 @@ func getValuesFromCommas(str string, line int) ([]any, bool) {
 	return output, true
 }
 
+// make a function that converts backslashes in a string to their correct character
+// e.g. "\n" -> newline
+// e.g. "\t" -> tab
+// e.g. "\r" -> carriage return
+// e.g. "\b" -> backspace
+// e.g. "\f" -> formfeed
+// e.g. "\a" -> alert
+// e.g. "\v" -> vertical tab
+// e.g. "\0" -> null
+// e.g. "\'" -> single quote
+// e.g. "\"" -> double quote
+// e.g. "\\" -> backslash
+// e.g. unicode characters like \u00A0 -> unicode
+func unescape(str string) string {
+	output := []byte{}
+	stringlen := len(str)
+	for i := 0; i < stringlen; i++ {
+		if str[i] == 92 {
+			if i+1 < stringlen {
+				i++
+				switch str[i] {
+				case 110:
+					output = append(output, 10)
+				case 116:
+					output = append(output, 9)
+				case 114:
+					output = append(output, 13)
+				case 98:
+					output = append(output, 8)
+				case 102:
+					output = append(output, 12)
+				case 118:
+					output = append(output, 11)
+				case 120:
+					output = append(output, 0)
+				case 34:
+					output = append(output, 34)
+				case 39:
+					output = append(output, 39)
+				case 92:
+					output = append(output, 92)
+				case 117:
+					if i+4 < stringlen {
+						i += 4
+						output = append(output, byte(int(str[i])*16*16*16+int(str[i+1])*16*16+int(str[i+2])*16+int(str[i+3])))
+					}
+				}
+			}
+		} else {
+			output = append(output, str[i])
+		}
+	}
+	return string(output[:])
+}
+
 func getParamNames(str string, line int) []string {
 	output := []string{}
 	temp := []byte{}
@@ -203,12 +259,6 @@ func split_by_semicolon_and_newline(str string) []code {
 			temp = append(temp, str[i])
 		}
 	}
-	finaloutput := []code{}
-	for i := 0; i < len(output); i++ {
-		if strings.Trim(output[i].code, " ") != "" {
-			finaloutput = append(finaloutput, output[i])
-		}
-	}
 	output = append(output, code{code: string(temp[:]), line: line})
 	return output
 }
@@ -222,12 +272,12 @@ var getCodeInIndent = func(i int, codearray []code, isIf bool) ([]code, int) {
 	})
 	i++
 	for {
-		if closeCompile.MatchString(codearray[i].code) || (isIf && (elseCompile.MatchString(codearray[i].code) || elseifCompile.MatchString(codearray[i].code))) {
+		if (closeCompile.MatchString(codearray[i].code) && !switchCloseCompile.MatchString(codearray[i].code)) || (isIf && (elseCompile.MatchString(codearray[i].code) || elseifCompile.MatchString(codearray[i].code))) {
 			indent++
 			if indent > 0 {
 				break
 			}
-		} else if openCompile.MatchString(codearray[i].code) {
+		} else if openCompile.MatchString(codearray[i].code) && !switchCloseCompile.MatchString(codearray[i].code) {
 			indent--
 		}
 		result = append(result, codearray[i])
@@ -276,7 +326,7 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 		}
 	}
 	if stringCompile.MatchString(codeseg.code) {
-		return (stringencode(codeseg.code)), true
+		return unescape(stringencode(codeseg.code)), true
 	} else if functionCompile.MatchString(codeseg.code) {
 		str := strings.Trim(codeseg.code, " ")
 		bracketsplit := strings.SplitN(str, "(", 2)
@@ -315,6 +365,26 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 
 var translateline = func(i int, codearray []code) (interface{}, int) {
 	codeseg := codearray[i]
+	if returnStatementCompile.MatchString(codeseg.code) {
+		var val any = strings.Trim(codeseg.code, " ")[6:]
+		if val != "" {
+			respval, worked := translateprocess(code{code: val.(string), line: codeseg.line})
+			if !worked {
+				log.Fatal("invalid value on line ", codeseg.line+1)
+			}
+			val = respval
+		} else {
+			val = nil
+		}
+		return returnType{
+			val:  val,
+			line: codeseg.line,
+		}, i + 1
+	} else if breakStatementCompile.MatchString(codeseg.code) {
+		return breakType{
+			line: codeseg.line,
+		}, i + 1
+	}
 	resp, worked := translateprocess(codeseg)
 	if worked {
 		return resp, i + 1

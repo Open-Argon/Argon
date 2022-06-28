@@ -13,10 +13,12 @@ func shell() {
 		} else {
 			tempstr = ArgonInput("... ").(string) + "\n"
 		}
-		if openCompile.MatchString(tempstr) {
-			indent--
-		} else if closeCompile.MatchString(tempstr) {
-			indent++
+		if !switchCloseCompile.MatchString(tempstr) {
+			if openCompile.MatchString(tempstr) {
+				indent--
+			} else if closeCompile.MatchString(tempstr) {
+				indent++
+			}
 		}
 		temp += tempstr
 		if indent >= 0 {

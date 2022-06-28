@@ -64,4 +64,16 @@ func init() {
 		VAL:    ArgonLicense,
 		FUNC:   true,
 	}
+	vars["exec"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    exec,
+		FUNC:   true,
+	}
+	vars["eval"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    eval,
+		FUNC:   true,
+	}
 }

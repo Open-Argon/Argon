@@ -1,11 +1,13 @@
 completed:
-    - 
+    - while loops
+    - subs (functions)
+    - add return to functions
+    - add break
 
 incompleted:
     - books (objects)
-    - subs (functions)
     - items (arrays)
-    - while loops
     - add else if to if statments
-    - add return to functions
     - add try catch
+    - add continue
+    - allow functions parameters to be passed in

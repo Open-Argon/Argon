@@ -1,1 +1,1 @@
-go build -o argon .
+go build -o argon-lang/argon .

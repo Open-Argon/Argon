@@ -8,21 +8,24 @@ import (
 	"strconv"
 )
 
-var runop func(codeseg any) (any, any)
+var runop func(codeseg any, localvars map[string]variableValue) (any, any)
 
 func init() {
 	runop = runprocess
 }
 
-func run(lines []any) [][]any {
+func run(lines []any, localvars map[string]variableValue) (any, any, [][]any) {
 	output := ([][]any{})
 	for i := 0; i < len(lines); i++ {
 		if lines[i] != nil {
-			val, ty := runprocess(lines[i])
+			val, ty := runprocess(lines[i], localvars)
 			output = append(output, []any{val, ty})
+			if ty == "return" || ty == "break" {
+				return ty, val, output
+			}
 		}
 	}
-	return output
+	return nil, nil, output
 }
 
 func anyToArgon(x any) string {
@@ -46,95 +49,142 @@ func anyToArgon(x any) string {
 	}
 }
 
-func runprocess(codeseg any) (any, any) {
+func runprocess(codeseg any, localvars map[string]variableValue) (any, any) {
 	switch codeseg.(type) {
 	case opperator:
-		return runOperator(codeseg.(opperator)), "opperator"
+		return runOperator(codeseg.(opperator), localvars), "opperator"
 	case variable:
-		myvar := vars[codeseg.(variable).variable]
+		myvar := localvars[codeseg.(variable).variable]
+		if myvar.EXISTS == nil {
+			myvar = vars[codeseg.(variable).variable]
+		}
 		if myvar.EXISTS != nil {
 			if myvar.TYPE != "func" && myvar.TYPE != "init_function" {
-				return myvar.VAL, "variable"
+				return myvar.VAL, "value"
 			} else {
-				return codeseg, "function"
+				return codeseg, "value"
 			}
 		}
 		log.Fatal("undecared variable " + codeseg.(variable).variable + " on line " + fmt.Sprint(codeseg.(variable).line+1))
 	case funcCallType:
-		return callFunc(codeseg.(funcCallType)), "return"
+		return callFunc(codeseg.(funcCallType), localvars), "value"
 	case whileLoop:
 		whileloop := codeseg.(whileLoop)
-		resp, _ := runop(whileloop.condition)
+		resp, _ := runop(whileloop.condition, localvars)
 		for boolean(resp) {
-			run(whileloop.code)
+			ty, val, _ := run(whileloop.code, localvars)
+			if ty == "break" {
+				break
+			} else if ty == "return" {
+				return val, "return"
+			}
 		}
 	case ifstatement:
 		iff := codeseg.(ifstatement)
-		resp, _ := runop(iff.condition)
+		resp, _ := runop(iff.condition, localvars)
 		if boolean(resp) {
-			run(iff.TRUE)
+			ty, val, _ := run(iff.TRUE, localvars)
+			return val, ty
 		} else {
-			run(iff.FALSE)
+			ty, val, _ := run(iff.FALSE, localvars)
+			return val, ty
 		}
-		return nil, nil
 	case importType:
 		importMod((codeseg.(importType).path).(string))
 		return nil, nil
 	case setVariable:
-		setVariableVal(codeseg.(setVariable))
+		setVariableVal(codeseg.(setVariable), localvars)
 		return nil, nil
 	case setFunction:
-		setFunctionVal(codeseg.(setFunction))
+		setFunctionVal(codeseg.(setFunction), localvars)
 		return nil, nil
+	case returnType:
+		val, worked := runop(codeseg.(returnType).val, localvars)
+		if worked == nil {
+			log.Fatal("return statement must return a value on line " + fmt.Sprint(codeseg.(returnType).line+1))
+		}
+		return val, "return"
+	case breakType:
+		return nil, "break"
 	}
 	return codeseg, "value"
 }
 
-func callFunc(call funcCallType) any {
-	if vars[call.name].EXISTS == nil {
+func callFunc(call funcCallType, localvars map[string]variableValue) any {
+	variables := localvars
+	if variables[call.name].EXISTS == nil {
+		variables = vars
+	}
+	if variables[call.name].EXISTS == nil {
 		log.Fatal("undecared function '" + call.name + "' on line " + fmt.Sprint(call.line+1))
 	}
 	callable := call
-	for vars[callable.name].TYPE != "func" && vars[callable.name].TYPE != "init_function" && fmt.Sprint(reflect.TypeOf(vars[callable.name].VAL)) == "main.variable" {
-		callable = funcCallType{name: vars[callable.name].VAL.(variable).variable, args: callable.args, line: callable.line}
+	for variables[callable.name].TYPE != "func" && vars[callable.name].TYPE != "init_function" && fmt.Sprint(reflect.TypeOf(variables[callable.name].VAL)) == "main.variable" {
+		callable = funcCallType{name: variables[callable.name].VAL.(variable).variable, args: callable.args, line: callable.line}
 	}
-	if vars[callable.name].TYPE != "func" && vars[callable.name].TYPE != "init_function" {
+	if variables[callable.name].TYPE != "func" && variables[callable.name].TYPE != "init_function" {
 		log.Fatal("'" + call.name + "' is not a function on line " + fmt.Sprint(call.line+1))
 	}
-
-	argvals := []any{}
-	for i := 0; i < len(callable.args); i++ {
-		resp, _ := runprocess(callable.args[i])
-		argvals = append(argvals, resp)
-	}
-
 	if vars[callable.name].FUNC {
+
+		argvals := []any{}
+		for i := 0; i < len(callable.args); i++ {
+			resp, _ := runprocess(callable.args[i], localvars)
+			argvals = append(argvals, resp)
+		}
 		return vars[callable.name].VAL.(func(...any) any)(argvals...)
 	} else {
-		run(vars[callable.name].VAL.(setFunction).code)
-		return nil
+		argvars := make(map[string]variableValue)
+		for i := 0; i < len(callable.args); i++ {
+			resp, _ := runprocess(callable.args[i], localvars)
+			name := variables[callable.name].VAL.(setFunction).args[i]
+			argvars[name] = variableValue{
+				VAL:    resp,
+				TYPE:   "var",
+				EXISTS: true,
+				FUNC:   false,
+			}
+		}
+		ty, val, _ := run(vars[callable.name].VAL.(setFunction).code, argvars)
+		if ty != "return" && ty != nil {
+			log.Fatal(ty, " is not allowed in top level of function on line ", (callable.line + 1))
+		}
+		return val
 	}
 }
 
-func setVariableVal(x setVariable) {
-	variable := vars[x.variable]
-	if variable.EXISTS == nil {
-		resp, _ := runop(x.value)
-		vars[x.variable] = variableValue{
+func setVariableVal(x setVariable, localvars map[string]variableValue) {
+	variable := localvars
+	if variable[x.variable].EXISTS == nil {
+		variable = vars
+	}
+	vari := variable[x.variable]
+	if variable[x.variable].EXISTS == nil {
+		resp, _ := runop(x.value, localvars)
+		variable[x.variable] = variableValue{
 			TYPE:   x.TYPE,
 			EXISTS: true,
 			VAL:    resp,
 			FUNC:   false,
 		}
-	} else if variable.TYPE == "var" {
-		variable.VAL, _ = runop(x.value)
+	} else if variable[x.variable].TYPE == "var" {
+		val, _ := runop(x.value, localvars)
+		variable[x.variable] = variableValue{
+			TYPE:   x.TYPE,
+			EXISTS: variable[x.variable].EXISTS,
+			VAL:    val,
+			FUNC:   variable[x.variable].FUNC,
+		}
 	} else {
-		log.Fatal("cannot edit " + variable.TYPE + " variable on line " + fmt.Sprint(x.line+1))
+		log.Fatal("cannot edit " + vari.TYPE + " variable on line " + fmt.Sprint(x.line+1))
 	}
 }
 
-func setFunctionVal(x setFunction) {
-	variable := vars[x.name]
+func setFunctionVal(x setFunction, localvars map[string]variableValue) {
+	variable := localvars[x.name]
+	if variable.EXISTS == nil {
+		variable = vars[x.name]
+	}
 	if vars[x.name].EXISTS == nil {
 		vars[x.name] = variableValue{
 			TYPE:   "func",
@@ -204,12 +254,12 @@ func number(x any) float64 {
 	}
 }
 
-func runOperator(opperation opperator) any {
+func runOperator(opperation opperator, localvars map[string]variableValue) any {
 	var output any
 	for i := 0; i < len(opperation.vals); i++ {
 		switch opperation.t {
 		case 0:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
@@ -221,118 +271,118 @@ func runOperator(opperation opperator) any {
 				}
 			}
 		case 1:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if boolean(x) {
 				output = x
 				break
 			}
 		case 2:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = xiny(output, x.([]any))
 			}
 		case 3:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = !xiny(output, x.([]interface{}))
 			}
 		case 4:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) <= number(x))
 			}
 		case 5:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) >= number(x))
 			}
 		case 6:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) < number(x))
 			}
 		case 7:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) > number(x))
 			}
 		case 8:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = (output != x)
 			}
 		case 9:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = (output == x)
 			}
 		case 10:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) - number(x))
 			}
 		case 11:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = dynamicAdd(output, x)
 			}
 		case 12:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) * number(x))
 			}
 		case 13:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = math.Floor(number(output) / number(x))
 			}
 		case 14:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = math.Mod(number(output), number(x))
 			}
 		case 15:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = (number(output) / number(x))
 			}
 		case 16:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {
 				output = math.Pow(number(output), 1/number(x))
 			}
 		case 17:
-			x, _ := runop(opperation.vals[i])
+			x, _ := runop(opperation.vals[i], localvars)
 			if output == nil {
 				output = x
 			} else {

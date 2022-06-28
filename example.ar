@@ -1,12 +1,8 @@
-import 'maths';
-
-log('whats the radius of the circle?')
-var radius = number(input('radius: '))
-
-var area = PI times radius to the power of 2
-var diameter = PI times radius
-
-log()
-
-log('the area of the circle is:', area)
-log('the diameter of the circle is:', diameter)
+i = 0
+while yes [
+    i = i + 1
+    log(i)
+    if i > 10 [
+        break
+    ]
+]

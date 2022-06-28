@@ -38,7 +38,7 @@ func importMod(path string) {
 			log.Fatal("Module not found: " + path + " (" + p + ")")
 		}
 	}
-	if xiny(path, imported) {
+	if xiny(p, imported) {
 		return
 	}
 	imported = append(imported, p)
@@ -51,5 +51,9 @@ func importMod(path string) {
 
 func runStr(str string) [][]any {
 	translated := translate(str)
-	return run(translated)
+	ty, _, resp := run(translated, make(map[string]variableValue))
+	if ty != nil {
+		log.Fatal(ty, " at top level")
+	}
+	return resp
 }

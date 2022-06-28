@@ -47,8 +47,11 @@ type setFunction struct {
 	line int
 }
 
-type functionSet struct {
-	name   string
-	params []string
-	line   int
+type returnType struct {
+	val  any
+	line int
+}
+
+type breakType struct {
+	line int
 }
