@@ -23,3 +23,31 @@ jobs:
 
     - name: Test
       run: go build -o argon-lang/argon ./...
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
+
+    - name: Build
+      run: go build -o argon-lang/argon ./...
+
+    - name: Test
+      run: go build -o argon-lang/argon ./...
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
+
+    - name: Build
+      run: go build -o argon-lang/argon ./...
+
+    - name: Test
+      run: go build -o argon-lang/argon ./...
