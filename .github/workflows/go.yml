@@ -11,6 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      uses: "marvinpinto/action-automatic-releases@latest"
     - uses: actions/checkout@v3
 
     - name: Set up Go
@@ -20,7 +21,6 @@ jobs:
 
     - name: Build
       run: go build -o argon-lang/argon ./...
-      uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: false
