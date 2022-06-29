@@ -25,7 +25,7 @@ func shell() {
 			resp := runStr(temp)
 			for i := 0; i < len(resp); i++ {
 				if resp[i][1] != nil {
-					fmt.Println(anyToArgon(resp[i][0]))
+					fmt.Println(anyToArgon(resp[i][0], false))
 				}
 			}
 			temp = ""

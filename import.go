@@ -51,7 +51,7 @@ func importMod(path string) {
 
 func runStr(str string) [][]any {
 	translated := translate(str)
-	ty, _, resp := run(translated, make(map[string]variableValue))
+	ty, _, resp := run(translated, []map[string]variableValue{vars})
 	if ty != nil {
 		log.Fatal(ty, " at top level")
 	}

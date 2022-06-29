@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 )
 
 func ArgonLog(x ...any) any {
 	output := []any{}
 	for i := 0; i < len(x); i++ {
-		output = append(output, anyToArgon(x[i]))
+		output = append(output, anyToArgon(x[i], false))
 	}
 	fmt.Println(output...)
 	return nil
@@ -21,7 +22,7 @@ func ArgonNumber(x ...any) any {
 }
 
 func ArgonString(x ...any) any {
-	return (anyToArgon(x[0]))
+	return (anyToArgon(x[0], true))
 }
 
 func ArgonWhole(x ...any) any {
@@ -64,15 +65,31 @@ SOFTWARE.`)
 	return nil
 }
 
-func exec(code string) any {
-	runStr(code)
+func exec(x ...any) any {
+	runStr(x[0].(string))
 	return nil
 }
 
-func eval(opperator string) any {
+func eval(x ...any) any {
 	resp, _ := translateprocess(code{
-		code: opperator,
+		code: x[0].(string),
 		line: 0,
 	})
 	return resp
+}
+
+func ArgonAppend(x ...any) any {
+	return append(x[0].([]any), x[1])
+}
+
+func ArgonExtend(x ...any) any {
+	return append(x[0].([]any), x[1].([]any)...)
+}
+
+func ArgonLen(x ...any) any {
+	return len(x[0].([]any))
+}
+
+func ArgonJoin(x ...any) any {
+	return strings.Join(x[0].([]string), x[1].(string))
 }

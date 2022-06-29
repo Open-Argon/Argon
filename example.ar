@@ -1,8 +1,8 @@
-i = 0
-while yes [
-    i = i + 1
-    log(i)
-    if i > 10 [
-        break
-    ]
-]
+const aspect = input('aspect ratio: ')
+const width = input('width: ') / 25.6
+
+const height = width / aspect;
+
+
+const diagonal = (width**2 + height ** 2) ** (1/2)
+log(diagonal, 'inches')

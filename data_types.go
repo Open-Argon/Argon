@@ -55,3 +55,16 @@ type returnType struct {
 type breakType struct {
 	line int
 }
+
+type continueType struct {
+	line int
+}
+
+type itemsType struct {
+	vals []any
+	line int
+}
+
+type closeIndent struct {
+	line int
+}

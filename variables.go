@@ -76,4 +76,29 @@ func init() {
 		VAL:    eval,
 		FUNC:   true,
 	}
+
+	vars["append"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    ArgonAppend,
+		FUNC:   true,
+	}
+	vars["extend"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    ArgonExtend,
+		FUNC:   true,
+	}
+	vars["len"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    ArgonLen,
+		FUNC:   true,
+	}
+	vars["join"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    ArgonJoin,
+		FUNC:   true,
+	}
 }

@@ -15,9 +15,9 @@ var whileCompile = makeRegex("( *)(while( )+" + anyAndNewline + "+( )+\\[" + any
 var subCompile = makeRegex("( *)(sub( )+" + variableOnly + "\\(" + anyAndNewline + "*\\)( )+\\[" + anyAndNewline + "*)( *)")
 var ifCompile = makeRegex("( *)(if( )+" + anyAndNewline + "+( )+\\[" + anyAndNewline + "*)( *)")
 var elseifCompile = makeRegex("( *)(\\] else if " + anyAndNewline + "+ \\[" + anyAndNewline + "*)( *)")
-var openCompile = makeRegex("( *)(" + anyAndNewline + "+( )+\\[" + anyAndNewline + "*)( *)")
+var openCompile = makeRegex("( *)(" + anyAndNewline + "+( )+\\[([^\\]])*)( *)")
 var elseCompile = makeRegex("( *)\\] else \\[" + anyAndNewline + "*( *)")
-var closeCompile = makeRegex("( *)" + anyAndNewline + "*\\]" + anyAndNewline + "*( *)")
+var closeCompile = makeRegex("( *)\\]( *)")
 var switchCloseCompile = makeRegex("( *)" + anyAndNewline + "*\\]" + anyAndNewline + "*\\[" + anyAndNewline + "*( *)")
 var importCompile = makeRegex("( *)import " + anyAndNewline + "+( *)")
 var bracketsCompile = makeRegex("( *)\\(" + anyAndNewline + "*\\)( *)")
@@ -26,7 +26,9 @@ var variableTextCompile = makeRegex("( *)" + variableOnly + "( *)")
 var variableonlyCompile = makeRegex(variableOnly)
 var setVariableCompile = makeRegex("( *)(((const|var) (" + variableOnly + "( *))=( *).+)|(( *)" + variableOnly + "( *))(( *)=( *).+))( *)")
 var returnStatementCompile = makeRegex("( *)(return(( )+" + anyAndNewline + "*)?)( *)")
+var itemsCompiled = makeRegex("( *)(\\[" + anyAndNewline + "*\\])( *)")
 var breakStatementCompile = makeRegex("( *)break( *)")
+var continueStatementCompile = makeRegex("( *)continue( *)")
 var skipCompile = makeRegex("( *)(#(.*))?")
 var processfunc func(codeseg code) (interface{}, bool)
 var linefunc func(i int, codearray []code) (interface{}, int)
@@ -76,28 +78,28 @@ var opperators = [][]string{
 		" is ",
 		"===",
 	}, {
-		" minus ",
-		" subtract ",
-		"-",
-	}, {
 		" plus ",
 		" add ",
 		"+",
+	}, {
+		" minus ",
+		" subtract ",
+		"-",
 	}, {
 		"*",
 		" x ",
 		" times ",
 		" multiplied by ",
 	}, {
+		" mod ",
+		" modulo ",
+		"%",
+	}, {
 		" div ",
 		" floor division of ",
 		" floor divistion ",
 		"//",
 		"$",
-	}, {
-		" mod ",
-		" modulo ",
-		"%",
 	}, {
 		" over ",
 		" divided by ",
@@ -273,12 +275,12 @@ var getCodeInIndent = func(i int, codearray []code, isIf bool) ([]code, int) {
 	i++
 	for {
 		if (closeCompile.MatchString(codearray[i].code) && !switchCloseCompile.MatchString(codearray[i].code)) || (isIf && (elseCompile.MatchString(codearray[i].code) || elseifCompile.MatchString(codearray[i].code))) {
-			indent++
-			if indent > 0 {
+			indent--
+			if indent < 0 {
 				break
 			}
 		} else if openCompile.MatchString(codearray[i].code) && !switchCloseCompile.MatchString(codearray[i].code) {
-			indent--
+			indent++
 		}
 		result = append(result, codearray[i])
 		i++
@@ -313,14 +315,15 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 					})
 					if worked {
 						vals = append(vals, val)
-					} else {
+
+						return opperator{
+							t:    i,
+							vals: vals,
+							line: codeseg.line,
+						}, true
+					} else if len(opperators) == i+1 {
 						return nil, false
 					}
-					return opperator{
-						t:    i,
-						vals: vals,
-						line: codeseg.line,
-					}, true
 				}
 			}
 		}
@@ -348,6 +351,15 @@ var translateprocess = func(codeseg code) (interface{}, bool) {
 			line: codeseg.line,
 		})
 		return brackets, ran
+	} else if itemsCompiled.MatchString(codeseg.code) {
+		inside := strings.Trim(codeseg.code, " ")[1 : len(strings.Trim(codeseg.code, " "))-1]
+		vals, worked := getValuesFromCommas(inside, codeseg.line)
+		if worked {
+			return itemsType{
+				vals: vals,
+				line: codeseg.line,
+			}, true
+		}
 	} else if numberCompile.MatchString(codeseg.code) {
 		if s, err := strconv.ParseFloat(strings.Trim(codeseg.code, " "), 64); err == nil {
 			return s, true
@@ -382,6 +394,10 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 		}, i + 1
 	} else if breakStatementCompile.MatchString(codeseg.code) {
 		return breakType{
+			line: codeseg.line,
+		}, i + 1
+	} else if continueStatementCompile.MatchString(codeseg.code) {
+		return continueType{
 			line: codeseg.line,
 		}, i + 1
 	}
@@ -502,7 +518,6 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 			line: codeseg.line,
 		}, i + 1
 	} else if skipCompile.MatchString(codeseg.code) {
-
 	} else {
 		err := "Invalid syntax on line "
 		log.Fatal("\n\nLine " + fmt.Sprint(codeseg.line+1) + ": " + codeseg.code + "\n" + err + "\n\n")
