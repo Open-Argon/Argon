@@ -1,24 +1,5 @@
-from 'math' import atan, asin, acos
-
-log('SohCahToa')
-log('1. Soh')
-log('2. Cah')
-log('3. Toa')
-log()
-const choice = whole(input('Enter your choice: '))
-
-if choice == 1 [
-    o = number(input('Enter the opposite: '))
-    h = number(input('Enter the hypotenuse: '))
-    log('The angle is: ' + (asin(o/h)))
-] else [
-    if choice == 2 [
-        a = number(input('Enter the adjacent: '))
-        h = number(input('Enter the hypotenuse: '))
-        log('The angle is: ' + (acos(o/h)))
-    ] else [
-        o = number(input('Enter the opposite: '))
-        a = number(input('Enter the adjacent: '))
-        log('The angle is: ' + (atan(o/a)))
-    ]
+sub coolsub(func) [
+    func('wow very cool')
 ]
+
+coolsub(log)

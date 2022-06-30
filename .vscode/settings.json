@@ -1,5 +1,6 @@
 {
-    "files.associations": {
-        "*.ar": "C"
-    }
+  "C_Cpp.errorSquiggles": "Disabled",
+  "files.associations": {
+    "*.ar": "C"
+  }
 }

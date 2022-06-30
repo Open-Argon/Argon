@@ -172,6 +172,12 @@ func callFunc(call funcCallType, vargroups []map[string]variableValue, origin st
 	for variables[callable.name].TYPE != "func" && variables[callable.name].TYPE != "init_function" && fmt.Sprint(reflect.TypeOf(variables[callable.name].VAL)) == "main.variable" {
 		callable = funcCallType{name: variables[callable.name].VAL.(variable).variable, args: callable.args, line: callable.line}
 	}
+	for i := len(vargroups) - 1; i >= 0; i-- {
+		if vargroups[i][callable.name].EXISTS != nil {
+			variables = vargroups[i]
+			break
+		}
+	}
 	if variables[callable.name].TYPE != "func" && variables[callable.name].TYPE != "init_function" {
 		log.Fatal("'" + call.name + "' is not a function on line " + fmt.Sprint(call.line+1))
 	}
