@@ -14,7 +14,7 @@
 - boolean renamed from true and false to yes and no
 - the syntax is very similar to python and javascript
 - no floats and ints, only numbers
-- **New Feature!** easier operators, e.g. `5^2` can now be `5 to the power of 2`
+- easier operators, e.g. `5^2` can now be `5 to the power of 2`
 
 ## Examples
 

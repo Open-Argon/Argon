@@ -2,4 +2,8 @@ sub coolsub(func) [
     func('wow very cool')
 ]
 
-coolsub(log)
+sub othersub(str) [
+    log(str)
+]
+
+coolsub(othersub)
