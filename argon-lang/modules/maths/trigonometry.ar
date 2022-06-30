@@ -1,0 +1,19 @@
+# trigonometry
+# a sub library of maths
+
+sub sin(theta) [
+    x = ((theta)/180) mod 1
+    result = 0-(((x - 0.5)**2) * 4) + 1
+    if ((theta div 180) div 1) % 2 != 0 [
+        result = result * -1
+    ]
+    return result
+]
+
+sub cos(theta) [
+    return sin(theta + 90)
+]
+
+sub tan(theta) [
+    return sin(theta) / cos(theta)
+]

@@ -1,6 +1,6 @@
-import "math"
+from 'math' import sin, sqrt
 
-log(sin(65))
+log(sin(65), sqrt(2))
 
 const aspect = input('aspect ratio: ')
 const width = input('width: ') / 25.6

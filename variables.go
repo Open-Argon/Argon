@@ -1,12 +1,5 @@
 package main
 
-type variableValue struct {
-	TYPE   string
-	VAL    interface{}
-	EXISTS interface{}
-	FUNC   bool
-}
-
 var vars = make(map[string]variableValue)
 
 func init() {

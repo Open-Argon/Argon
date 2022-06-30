@@ -13,6 +13,7 @@ func shell() {
 	if err != nil {
 		panic(err)
 	}
+	variables := map[string]variableValue{}
 	for {
 		tempstr := ""
 		if indent >= 0 {
@@ -29,7 +30,7 @@ func shell() {
 		}
 		temp += tempstr
 		if indent >= 0 {
-			resp := runStr(temp, ex)
+			resp := runStr(temp, ex, variables)
 			for i := 0; i < len(resp); i++ {
 				if resp[i][1] != nil {
 					fmt.Println(anyToArgon(resp[i][0], false))

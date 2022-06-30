@@ -19,7 +19,7 @@ var openCompile = makeRegex("( *)(" + anyAndNewline + "+( )+\\[([^\\]])*)( *)")
 var elseCompile = makeRegex("( *)\\] else \\[" + anyAndNewline + "*( *)")
 var closeCompile = makeRegex("( *)\\]( *)")
 var switchCloseCompile = makeRegex("( *)" + anyAndNewline + "*\\]" + anyAndNewline + "*\\[" + anyAndNewline + "*( *)")
-var importCompile = makeRegex("( *)import " + anyAndNewline + "+( *)")
+var importCompile = makeRegex("( *)((import " + anyAndNewline + "+)|(from " + anyAndNewline + "+ import (( *)" + variableOnly + "( *)(\\,( *)" + variableOnly + "( *))*)))( *)")
 var bracketsCompile = makeRegex("( *)\\(" + anyAndNewline + "*\\)( *)")
 var functionCompile = makeRegex("( *)" + variableOnly + "\\(" + anyAndNewline + "*\\)( *)")
 var variableTextCompile = makeRegex("( *)" + variableOnly + "( *)")
@@ -505,13 +505,27 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 		}, x
 	} else if importCompile.MatchString(codeseg.code) {
 		str := strings.Trim(codeseg.code, " ")
-		path, worked := processfunc(code{code: str[7:], line: codeseg.line})
-		if !worked {
-			log.Fatal("invalid import path on line ", codeseg.line+1)
+		var toImport any = nil
+		var path any
+		if strings.HasPrefix(str, "import") {
+			p, worked := processfunc(code{code: str[7:], line: codeseg.line})
+			path = p
+			if !worked {
+				log.Fatal("invalid import path on line ", codeseg.line+1)
+			}
+		} else {
+			info := strings.SplitN(str[5:], " import ", 2)
+			p, worked := processfunc(code{code: info[0], line: codeseg.line})
+			path = p
+			if !worked {
+				log.Fatal("invalid import path on line ", codeseg.line+1)
+			}
+			toImport = getParamNames(info[1], codeseg.line)
 		}
 		return importType{
-			path: path,
-			line: codeseg.line,
+			path:     path,
+			toImport: toImport,
+			line:     codeseg.line,
 		}, i + 1
 	} else {
 		err := "Invalid syntax on line "

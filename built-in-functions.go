@@ -71,7 +71,7 @@ func exec(x ...any) any {
 	if len(x) > 1 {
 		origin = x[1].(string)
 	}
-	runStr(x[0].(string), origin)
+	runStr(x[0].(string), origin, map[string]variableValue{})
 	return nil
 }
 

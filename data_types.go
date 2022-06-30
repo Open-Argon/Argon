@@ -22,9 +22,18 @@ type whileLoop struct {
 	code      []interface{}
 }
 
+type variableValue struct {
+	TYPE   string
+	VAL    interface{}
+	EXISTS interface{}
+	origin string
+	FUNC   bool
+}
+
 type importType struct {
-	path interface{}
-	line int
+	path     interface{}
+	toImport any
+	line     int
 }
 
 type ifstatement struct {
@@ -62,9 +71,5 @@ type continueType struct {
 
 type itemsType struct {
 	vals []any
-	line int
-}
-
-type closeIndent struct {
 	line int
 }

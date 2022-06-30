@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 )
 
-var imported = []any{}
-
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
@@ -16,7 +14,9 @@ func FileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func importMod(realpath string, origin string) {
+var modules = map[string](map[string]variableValue){}
+
+func importMod(realpath string, origin string) map[string]variableValue {
 	extention := filepath.Ext(realpath)
 	path := realpath
 	if extention == "" {
@@ -38,20 +38,20 @@ func importMod(realpath string, origin string) {
 			break
 		}
 	}
-	if xiny(p, imported) {
-		return
+	if modules[p] == nil {
+		modules[p] = map[string]variableValue{}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			log.Fatal(err)
+		}
+		runStr(string(data), p, modules[p])
 	}
-	imported = append(imported, p)
-	data, err := os.ReadFile(p)
-	if err != nil {
-		log.Fatal(err)
-	}
-	runStr(string(data), filepath.Dir(p))
+	return modules[p]
 }
 
-func runStr(str string, origin string) [][]any {
+func runStr(str string, origin string, variables map[string]variableValue) [][]any {
 	translated := translate(str)
-	ty, _, resp := run(translated, origin, []map[string]variableValue{vars})
+	ty, _, resp := run(translated, origin, []map[string]variableValue{vars, variables})
 	if ty != nil {
 		log.Fatal(ty, " at top level")
 	}

@@ -1,4 +1,0 @@
-# used to import the 'maths' library if the user chooses to use the amarican pronunciation of the word 'math'
-# ------------------------------------------------------------------------------------------------------------
-
-import 'maths'

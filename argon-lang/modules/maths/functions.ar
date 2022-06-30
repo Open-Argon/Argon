@@ -1,0 +1,47 @@
+# functions
+# a sub library of maths
+
+sub factorial(num) [
+    num = whole(num)
+    answer = 1
+    i = 2
+    while i < num+1 [
+        answer = answer * i
+        i = i + 1
+    ]
+    return answer
+]
+
+sub mod(x, n) [
+    return x - n * whole(x / n)
+]
+
+sub abs(x) [
+    if x < 0 [
+        return 0-x
+    ]
+    return x
+]
+
+sub sqrt(x) [
+    last_guess = x/2
+    if x equals 0 [
+        return 0
+    ]
+    while yes [
+        guess = (last_guess + x / last_guess) / 2
+        if abs(guess - last_guess) < 1e-5 [
+            return guess
+        ]
+        last_guess = guess
+    ]
+]
+
+sub exp(x) [
+    return (e**x)
+]
+
+sub logarithm(x) [
+    n = 1e10
+    return n * ((x ** (1/n)) - 1)
+]
