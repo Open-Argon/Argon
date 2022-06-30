@@ -55,6 +55,7 @@ var opperators = [][]string{
 	}, {
 		">=",
 		" is bigger than or equal to ",
+		" is greater than or equal to ",
 		" is more than or equal to ",
 	}, {
 		"<",
@@ -63,6 +64,7 @@ var opperators = [][]string{
 	}, {
 		">",
 		" is bigger than ",
+		" is greater than ",
 		" is more than ",
 	}, {
 		"!=",

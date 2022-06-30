@@ -1,6 +1,9 @@
 # trigonometry
 # a sub library of maths
 
+from 'math/functions' import abs, sqrt
+
+
 sub sin(theta) [
     x = ((theta)/180) mod 1
     result = 0-(((x - 0.5)**2) * 4) + 1
@@ -16,4 +19,24 @@ sub cos(theta) [
 
 sub tan(theta) [
     return sin(theta) / cos(theta)
+]
+
+# inverse trigonometry
+
+sub asin(result) [
+    theta = result
+    theta = (sqrt((0-(result - 1))/4)+0.5)
+    theta = (theta * 180) mod 180
+    if result < 0 [
+        theta = (0-theta) - 180
+    ]
+    return theta
+]
+
+sub acos(result) [
+    return asin(result) - 90
+]
+
+sub atan(result) [
+    return asin(result) * acos(result)
 ]

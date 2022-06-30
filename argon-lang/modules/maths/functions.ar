@@ -42,6 +42,6 @@ sub exp(x) [
 ]
 
 sub logarithm(x) [
-    n = 1e10
+    n = 1e-100
     return n * ((x ** (1/n)) - 1)
 ]
