@@ -7,6 +7,7 @@ completed:
     - allow functions parameters to be passed in
     - create sub return values
     - make local variables that delete after the function finishes
+    - add math module
 
 incompleted:
     - books (objects)

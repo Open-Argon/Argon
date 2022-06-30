@@ -127,7 +127,7 @@ func getValuesFromCommas(str string, line int) ([]any, bool) {
 	for i := 0; i < stringlen; i++ {
 		if str[i] == 44 {
 			tempstr := string(temp[:])
-			resp, worked := processfunc(code{code: tempstr, line: 0})
+			resp, worked := processfunc(code{code: tempstr, line: line})
 			if worked {
 				output = append(output, resp)
 				temp = []byte{}
@@ -138,7 +138,7 @@ func getValuesFromCommas(str string, line int) ([]any, bool) {
 	}
 	tempstr := string(temp[:])
 	if tempstr != "" {
-		resp, worked := processfunc(code{code: tempstr, line: 0})
+		resp, worked := processfunc(code{code: tempstr, line: line})
 		if worked {
 			output = append(output, resp)
 		} else {
@@ -227,21 +227,15 @@ func getParamNames(str string, line int) []string {
 }
 
 func split_by_semicolon_and_newline(str string) []code {
+
 	output := []code{}
 	temp := []byte{}
-	split := strings.Split(strings.ReplaceAll(str, "\r", ""), "\n")
-	splitoutput := []string{}
-	for i := 0; i < len(split); i++ {
-		if !(skipCompile.MatchString(split[i])) {
-			splitoutput = append(splitoutput, split[i])
-		}
-	}
-	str = strings.Join(splitoutput, "\n")
-	stringlen := len(str)
 	line := 0
 	quote := false
 	backtick := false
 	speech := false
+	str = strings.ReplaceAll(str, "\r", "")
+	stringlen := len(str)
 
 	for i := 0; i < stringlen; i++ {
 		if str[i] == 34 && (len(temp) == 0 || str[i-1] != 92) && !speech && !backtick {
@@ -400,6 +394,8 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 		return continueType{
 			line: codeseg.line,
 		}, i + 1
+	} else if skipCompile.MatchString(codeseg.code) {
+		return nil, i + 1
 	}
 	resp, worked := translateprocess(codeseg)
 	if worked {
@@ -415,7 +411,7 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 		resp, worked := translateprocess(code{code: VAR[1],
 			line: codeseg.line})
 		if !worked {
-			log.Fatal("invalid value")
+			log.Fatal("invalid value on line ", codeseg.line+1, ": ", VAR[1])
 		}
 		return setVariable{
 			TYPE:     TYPE,
@@ -431,7 +427,7 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 		condition, worked := translateprocess(code{code: split[0],
 			line: codeseg.line})
 		if !worked {
-			log.Fatal("invalid value on line", codeseg.line+1)
+			log.Fatal("invalid value on line ", codeseg.line+1)
 		}
 		codedata, x := getCodeInIndent(i, codearray, false)
 		codeoutput := []interface{}{}
@@ -455,7 +451,7 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 		condition, worked := translateprocess(code{code: split[0],
 			line: codeseg.line})
 		if !worked {
-			log.Fatal("invalid value on line", codeseg.line+1)
+			log.Fatal("invalid value on line ", codeseg.line+1, ": ", split[0])
 		}
 		codedata, x := getCodeInIndent(i, codearray, true)
 		codeoutput := []interface{}{}
@@ -517,7 +513,6 @@ var translateline = func(i int, codearray []code) (interface{}, int) {
 			path: path,
 			line: codeseg.line,
 		}, i + 1
-	} else if skipCompile.MatchString(codeseg.code) {
 	} else {
 		err := "Invalid syntax on line "
 		log.Fatal("\n\nLine " + fmt.Sprint(codeseg.line+1) + ": " + codeseg.code + "\n" + err + "\n\n")

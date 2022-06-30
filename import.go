@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,8 +17,10 @@ func FileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func importMod(path string) {
-	extention := filepath.Ext(path)
+func importMod(realpath string) {
+	origin := realpath
+	extention := filepath.Ext(realpath)
+	path := realpath
 	if extention == "" {
 		path += ".ar"
 	}
@@ -25,17 +28,17 @@ func importMod(path string) {
 	if err != nil {
 		panic(err)
 	}
-	exPath := ex
-	p := filepath.Join(exPath, path)
-	if !FileExists(p) {
-		ex, err = os.Executable()
-		if err != nil {
-			panic(err)
-		}
-		exPath = filepath.Dir(ex)
-		p = filepath.Join(exPath, "modules", path)
-		if !FileExists(p) {
-			log.Fatal("Module not found: " + path + " (" + p + ")")
+	executable, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	executable = filepath.Dir(executable)
+	pathsToTest := []string{filepath.Join(origin, realpath, "init.ar"), filepath.Join(origin, path), filepath.Join(origin, "modules", path), filepath.Join(origin, "modules", realpath, "init.ar"), filepath.Join(ex, path), filepath.Join(ex, "modules", realpath, "init.ar"), filepath.Join(ex, "modules", path), filepath.Join(executable, "modules", realpath, "init.ar"), filepath.Join(executable, "modules", path)}
+	fmt.Println(pathsToTest)
+	var p string
+	for _, p = range pathsToTest {
+		if FileExists(p) {
+			break
 		}
 	}
 	if xiny(p, imported) {

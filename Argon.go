@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type code struct {
@@ -27,6 +28,7 @@ func makeRegex(str string) *regexp.Regexp {
 }
 
 func main() {
+	ArgonSetSeed(time.Now().UnixMilli())
 	if len(os.Args) == 1 {
 		shell()
 	} else {

@@ -119,7 +119,8 @@ func runprocess(codeseg any, vargroups []map[string]variableValue) (any, any) {
 			return val, ty
 		}
 	case importType:
-		importMod((codeseg.path).(string))
+		resp, _ := runop(codeseg.path, vargroups)
+		importMod(resp.(string))
 		return nil, nil
 	case setVariable:
 		setVariableVal(codeseg, vargroups)
@@ -398,14 +399,14 @@ opperationloop:
 			} else {
 				output = (number(output) * number(x))
 			}
-		case 13:
+		case 14:
 			x, _ := runop(opperation.vals[i], vargroups)
 			if output == nil {
 				output = x
 			} else {
 				output = math.Floor(number(output) / number(x))
 			}
-		case 14:
+		case 13:
 			x, _ := runop(opperation.vals[i], vargroups)
 			if output == nil {
 				output = x

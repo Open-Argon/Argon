@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"strings"
 )
@@ -87,9 +88,27 @@ func ArgonExtend(x ...any) any {
 }
 
 func ArgonLen(x ...any) any {
-	return len(x[0].([]any))
+	switch value := x[0].(type) {
+	case []any:
+		return len(value)
+	case string:
+		return len(value)
+	case map[any]any:
+		return len(value)
+	default:
+		return 0
+	}
 }
 
 func ArgonJoin(x ...any) any {
 	return strings.Join(x[0].([]string), x[1].(string))
+}
+
+func ArgonSetSeed(x ...any) any {
+	rand.Seed(x[0].(int64))
+	return nil
+}
+
+func ArgonRandom(x ...any) any {
+	return rand.Float64()
 }

@@ -1,0 +1,22 @@
+# THE MATH LIBRARY
+creation date 30/6/2022
+last modified 30/6/2022
+author: William Bell
+license: MIT
+version: 1.0
+# description:
+ - This module contains basic math functions for use within Argon.
+ - The algorithms used are designed to be fast and efficient, however may give inaccurate results with large numbers.
+ - However variables such as pi and e are included in the module and have been pre-computed for you, with 1000 digits to make they will work with every use case.
+ - algorithms such as logarithm give close but not exact results, however the speed of the algorithm is fast. if you want to get more accurate results, you can find other maths modules which are more accurate, or create your own function.
+# functions:
+ - abs(x)
+ - ceil(x)
+ - floor(x)
+ - round(x)
+ - sqrt(x)
+ - sin(x)
+ - cos(x)
+ - tan(x)
+ - exp(x)
+ - logarithm(x)
