@@ -1,7 +1,7 @@
 # trigonometry
 # a sub library of maths
 
-from 'math/functions' import abs, sqrt
+from 'functions' import abs, sqrt
 
 
 sub sin(theta) [
