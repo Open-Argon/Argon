@@ -67,7 +67,11 @@ SOFTWARE.`)
 }
 
 func exec(x ...any) any {
-	runStr(x[0].(string))
+	origin := ""
+	if len(x) > 1 {
+		origin = x[1].(string)
+	}
+	runStr(x[0].(string), origin)
 	return nil
 }
 

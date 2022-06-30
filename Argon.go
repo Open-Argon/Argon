@@ -28,10 +28,14 @@ func makeRegex(str string) *regexp.Regexp {
 }
 
 func main() {
+	ex, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
 	ArgonSetSeed(time.Now().UnixMilli())
 	if len(os.Args) == 1 {
 		shell()
 	} else {
-		importMod(os.Args[1])
+		importMod(os.Args[1], ex)
 	}
 }

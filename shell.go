@@ -1,11 +1,18 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 func shell() {
 	fmt.Println("Argon Shell\nMIT License\n\nCopyright (c) 2022 William Bell\ncall 'license' for license information\n ")
 	indent := 0
 	temp := ""
+	ex, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
 	for {
 		tempstr := ""
 		if indent >= 0 {
@@ -22,7 +29,7 @@ func shell() {
 		}
 		temp += tempstr
 		if indent >= 0 {
-			resp := runStr(temp)
+			resp := runStr(temp, ex)
 			for i := 0; i < len(resp); i++ {
 				if resp[i][1] != nil {
 					fmt.Println(anyToArgon(resp[i][0], false))

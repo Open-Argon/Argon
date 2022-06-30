@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -17,8 +16,7 @@ func FileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func importMod(realpath string) {
-	origin := realpath
+func importMod(realpath string, origin string) {
 	extention := filepath.Ext(realpath)
 	path := realpath
 	if extention == "" {
@@ -34,7 +32,6 @@ func importMod(realpath string) {
 	}
 	executable = filepath.Dir(executable)
 	pathsToTest := []string{filepath.Join(origin, realpath, "init.ar"), filepath.Join(origin, path), filepath.Join(origin, "modules", path), filepath.Join(origin, "modules", realpath, "init.ar"), filepath.Join(ex, path), filepath.Join(ex, "modules", realpath, "init.ar"), filepath.Join(ex, "modules", path), filepath.Join(executable, "modules", realpath, "init.ar"), filepath.Join(executable, "modules", path)}
-	fmt.Println(pathsToTest)
 	var p string
 	for _, p = range pathsToTest {
 		if FileExists(p) {
@@ -49,12 +46,12 @@ func importMod(realpath string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	runStr(string(data))
+	runStr(string(data), filepath.Dir(p))
 }
 
-func runStr(str string) [][]any {
+func runStr(str string, origin string) [][]any {
 	translated := translate(str)
-	ty, _, resp := run(translated, []map[string]variableValue{vars})
+	ty, _, resp := run(translated, origin, []map[string]variableValue{vars})
 	if ty != nil {
 		log.Fatal(ty, " at top level")
 	}
