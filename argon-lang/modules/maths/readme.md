@@ -1,9 +1,11 @@
 # THE MATH LIBRARY
+```
 creation date 30/6/2022
 last modified 30/6/2022
 author: William Bell
 license: MIT
 version: 1.0
+```
 # description:
  - This module contains basic math functions for use within Argon.
  - The algorithms used are designed to be fast and efficient, however may give inaccurate results with large numbers.
