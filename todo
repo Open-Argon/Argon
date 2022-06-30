@@ -8,6 +8,8 @@ completed:
     - create sub return values
     - make local variables that delete after the function finishes
     - add math module
+    - import
+    - selective importing
 
 incompleted:
     - books (objects)
