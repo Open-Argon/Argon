@@ -10,10 +10,10 @@ completed:
     - add math module
     - import
     - selective importing
+    - fix close square bracket not being allowed in open indentation
 
 incompleted:
     - books (objects)
     - items (arrays)
     - add else if to if statments
     - add try catch
-    - fix close square bracket not being allowed in open indentation

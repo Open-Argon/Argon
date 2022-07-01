@@ -15,7 +15,7 @@ var whileCompile = makeRegex("( *)(while( )+" + anyAndNewline + "+( )+\\[" + any
 var subCompile = makeRegex("( *)(sub( )+" + variableOnly + "\\(" + anyAndNewline + "*\\)( )+\\[" + anyAndNewline + "*)( *)")
 var ifCompile = makeRegex("( *)(if( )+" + anyAndNewline + "+( )+\\[" + anyAndNewline + "*)( *)")
 var elseifCompile = makeRegex("( *)(\\] else if " + anyAndNewline + "+ \\[" + anyAndNewline + "*)( *)")
-var openCompile = makeRegex("( *)(" + anyAndNewline + "+( )+\\[([^\\]])*)( *)")
+var openCompile = makeRegex("( *)((.)+( )+" + anyAndNewline + "+(\\(" + anyAndNewline + "+\\))?( )+\\[" + anyAndNewline + "*)")
 var elseCompile = makeRegex("( *)\\] else \\[" + anyAndNewline + "*( *)")
 var closeCompile = makeRegex("( *)\\]( *)")
 var switchCloseCompile = makeRegex("( *)" + anyAndNewline + "*\\]" + anyAndNewline + "*\\[" + anyAndNewline + "*( *)")
@@ -270,7 +270,7 @@ var getCodeInIndent = func(i int, codearray []code, isIf bool) ([]code, int) {
 	})
 	i++
 	for {
-		if (closeCompile.MatchString(codearray[i].code) && !switchCloseCompile.MatchString(codearray[i].code)) || (isIf && (elseCompile.MatchString(codearray[i].code) || elseifCompile.MatchString(codearray[i].code))) {
+		if (closeCompile.MatchString(codearray[i].code) && !setVariableCompile.MatchString(codearray[i].code) && !switchCloseCompile.MatchString(codearray[i].code)) || (isIf && (elseCompile.MatchString(codearray[i].code) || elseifCompile.MatchString(codearray[i].code))) {
 			indent--
 			if indent < 0 {
 				break

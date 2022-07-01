@@ -1,0 +1,16 @@
+# THE RANDOM LIBRARY
+# creation date 1/7/2022
+# last modified 1/7/2022
+# author: William Bell
+# license: MIT
+# version: 1.0
+
+# --------------------------------------------------------------------------------------------------------------------
+
+sub randint(a, b) [
+    return whole(randfloat(a, b+1))
+]
+
+sub randfloat(a, b) [
+    return (random() * (b - a)) + a
+]

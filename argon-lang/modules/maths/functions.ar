@@ -41,7 +41,22 @@ sub exp(x) [
     return (e**x)
 ]
 
-sub logarithm(x) [
-    n = 1e-100
+sub ln(x) [
+    n = 1e10
     return n * ((x ** (1/n)) - 1)
+]
+
+sub logarithm(x) [
+    return ln(x)/ln(10)
+]
+
+sub logarithmX(x,base) [
+    return ln(x)/ln(base)
+]
+
+sub alogarithm(x) [
+    return 10**x
+]
+sub alogarithmX(x, base) [
+    return base**x
 ]

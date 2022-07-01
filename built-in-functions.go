@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
 func ArgonLog(x ...any) any {
@@ -106,6 +107,15 @@ func ArgonLen(x ...any) any {
 
 func ArgonJoin(x ...any) any {
 	return strings.Join(x[0].([]string), x[1].(string))
+}
+
+func ArgonTime(x ...any) any {
+	return time.Now().UnixMilli()
+}
+
+func ArgonSleep(x ...any) any {
+	time.Sleep(time.Duration(number(x[0])) * time.Millisecond)
+	return nil
 }
 
 func ArgonSetSeed(x ...any) any {

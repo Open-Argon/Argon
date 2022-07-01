@@ -1,9 +1,5 @@
-sub coolsub(func) [
-    func('wow very cool')
-]
+from 'random' import randint
 
-sub othersub(str) [
-    log(str)
+while yes [
+    log(randint(1, 10))
 ]
-
-coolsub(othersub)

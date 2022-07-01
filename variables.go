@@ -94,4 +94,34 @@ func init() {
 		VAL:    ArgonJoin,
 		FUNC:   true,
 	}
+	vars["random"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    ArgonRandom,
+		FUNC:   true,
+	}
+	vars["randomSetSeed"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    ArgonSetSeed,
+		FUNC:   true,
+	}
+	vars["randomSetSeed"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    ArgonSetSeed,
+		FUNC:   true,
+	}
+	vars["time"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    ArgonTime,
+		FUNC:   true,
+	}
+	vars["sleep"] = variableValue{
+		TYPE:   "init_function",
+		EXISTS: true,
+		VAL:    ArgonSleep,
+		FUNC:   true,
+	}
 }

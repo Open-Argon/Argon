@@ -17,18 +17,16 @@ func shell() {
 	for {
 		tempstr := ""
 		if indent >= 0 {
-			tempstr = ArgonInput("> ").(string) + "\n"
+			tempstr = ArgonInput("> ").(string)
 		} else {
-			tempstr = ArgonInput("... ").(string) + "\n"
+			tempstr = ArgonInput("... ").(string)
 		}
-		if !switchCloseCompile.MatchString(tempstr) {
-			if openCompile.MatchString(tempstr) {
-				indent--
-			} else if closeCompile.MatchString(tempstr) {
-				indent++
-			}
+		if openCompile.MatchString(tempstr) && !setVariableCompile.MatchString(tempstr) {
+			indent--
+		} else if closeCompile.MatchString(tempstr) {
+			indent++
 		}
-		temp += tempstr
+		temp += tempstr + "\n"
 		if indent >= 0 {
 			resp := runStr(temp, ex, variables)
 			for i := 0; i < len(resp); i++ {
