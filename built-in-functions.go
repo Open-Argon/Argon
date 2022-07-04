@@ -10,28 +10,32 @@ import (
 	"time"
 )
 
-func ArgonLog(x ...any) any {
+func ArgonLog(x ...any) (any, any) {
 	output := []any{}
 	for i := 0; i < len(x); i++ {
 		output = append(output, anyToArgon(x[i], false))
 	}
 	fmt.Println(output...)
-	return nil
+	return nil, nil
 }
 
-func ArgonNumber(x ...any) any {
+func ArgonNumber(x ...any) (any, any) {
 	return (number(x[0]))
 }
 
-func ArgonString(x ...any) any {
-	return (anyToArgon(x[0], true))
+func ArgonString(x ...any) (any, any) {
+	return (anyToArgon(x[0], true)), nil
 }
 
-func ArgonWhole(x ...any) any {
-	return (math.Floor(number(x[0])))
+func ArgonWhole(x ...any) (any, any) {
+	num, err := number(x[0])
+	if err != nil {
+		return nil, err
+	}
+	return (math.Floor(num)), nil
 }
 
-func ArgonInput(x ...any) any {
+func ArgonInput(x ...any) (any, any) {
 	fmt.Print(x[0])
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
@@ -39,10 +43,10 @@ func ArgonInput(x ...any) any {
 	if err := scanner.Err(); err != nil {
 		fmt.Println("Error encountered:", err)
 	}
-	return (line)
+	return (line), nil
 }
 
-func ArgonLicense(...any) any {
+func ArgonLicense(...any) (any, any) {
 	fmt.Println(`MIT License
 
 Copyright (c) 2022 William Bell
@@ -64,65 +68,69 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.`)
-	return nil
+	return nil, nil
 }
 
-func exec(x ...any) any {
+func exec(x ...any) (any, any) {
 	origin := ""
 	if len(x) > 1 {
 		origin = x[1].(string)
 	}
 	runStr(x[0].(string), origin, map[string]variableValue{})
-	return nil
+	return nil, nil
 }
 
-func eval(x ...any) any {
+func eval(x ...any) (any, any) {
 	resp, _ := translateprocess(code{
 		code: x[0].(string),
 		line: 0,
 	})
-	return resp
+	return resp, nil
 }
 
-func ArgonAppend(x ...any) any {
-	return append(x[0].([]any), x[1])
+func ArgonAppend(x ...any) (any, any) {
+	return append(x[0].([]any), x[1]), nil
 }
 
-func ArgonExtend(x ...any) any {
-	return append(x[0].([]any), x[1].([]any)...)
+func ArgonExtend(x ...any) (any, any) {
+	return append(x[0].([]any), x[1].([]any)...), nil
 }
 
-func ArgonLen(x ...any) any {
+func ArgonLen(x ...any) (any, any) {
 	switch value := x[0].(type) {
 	case []any:
-		return len(value)
+		return len(value), nil
 	case string:
-		return len(value)
+		return len(value), nil
 	case map[any]any:
-		return len(value)
+		return len(value), nil
 	default:
-		return 0
+		return 0, nil
 	}
 }
 
-func ArgonJoin(x ...any) any {
-	return strings.Join(x[0].([]string), x[1].(string))
+func ArgonJoin(x ...any) (any, any) {
+	return strings.Join(x[0].([]string), x[1].(string)), nil
 }
 
-func ArgonTime(x ...any) any {
-	return time.Now().UnixMilli()
+func ArgonTime(x ...any) (any, any) {
+	return time.Now().UnixMilli(), nil
 }
 
-func ArgonSleep(x ...any) any {
-	time.Sleep(time.Duration(number(x[0])) * time.Millisecond)
-	return nil
+func ArgonSleep(x ...any) (any, any) {
+	num, err := number(x[0])
+	if err != nil {
+		return nil, err
+	}
+	time.Sleep(time.Duration(num) * time.Millisecond)
+	return nil, nil
 }
 
-func ArgonSetSeed(x ...any) any {
+func ArgonSetSeed(x ...any) (any, any) {
 	rand.Seed(x[0].(int64))
-	return nil
+	return nil, nil
 }
 
-func ArgonRandom(x ...any) any {
-	return rand.Float64()
+func ArgonRandom(x ...any) (any, any) {
+	return rand.Float64(), nil
 }

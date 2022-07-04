@@ -1,5 +1,7 @@
 package main
 
+import "math"
+
 var vars = make(map[string]variableValue)
 
 func init() {
@@ -25,6 +27,18 @@ func init() {
 		TYPE:   "init",
 		EXISTS: true,
 		VAL:    false,
+		FUNC:   false,
+	}
+	vars["infinity"] = variableValue{
+		TYPE:   "init",
+		EXISTS: true,
+		VAL:    math.Inf(1),
+		FUNC:   false,
+	}
+	vars["NaN"] = variableValue{
+		TYPE:   "init",
+		EXISTS: true,
+		VAL:    math.NaN(),
 		FUNC:   false,
 	}
 	vars["unknown"] = variableValue{

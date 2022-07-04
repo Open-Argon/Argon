@@ -36,6 +36,9 @@ func main() {
 	if len(os.Args) == 1 {
 		shell()
 	} else {
-		importMod(os.Args[1], ex)
+		_, err := importMod(os.Args[1], ex)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
