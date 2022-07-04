@@ -77,3 +77,9 @@ type itemsType struct {
 	vals []any
 	line int
 }
+
+type tryType struct {
+	code  []any
+	catch []any
+	line  int
+}

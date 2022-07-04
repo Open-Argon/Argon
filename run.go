@@ -103,6 +103,19 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 			vals = append(vals, resp)
 		}
 		return vals, "value"
+	case tryType:
+
+		ty, resp, _ := run(codeseg.code, origin, append(vargroups, map[string]variableValue{}))
+		if ty == "error" {
+			ty, resp, _ := run(codeseg.catch, origin, append(vargroups, map[string]variableValue{"err": {
+				TYPE:   "var",
+				EXISTS: true,
+				VAL:    resp,
+				FUNC:   false,
+			}}))
+			return resp, ty
+		}
+		return resp, ty
 	case whileLoop:
 		whileloop := codeseg
 		resp, _ := runop(whileloop.condition, origin, vargroups)

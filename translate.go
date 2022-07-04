@@ -30,6 +30,8 @@ var itemsCompiled = makeRegex("( *)(\\[" + anyAndNewline + "*\\])( *)")
 var breakStatementCompile = makeRegex("( *)break( *)")
 var continueStatementCompile = makeRegex("( *)continue( *)")
 var skipCompile = makeRegex("( *)(#(.*))?")
+var tryCompile = makeRegex("( *)(try( )+\\[" + anyAndNewline + "*)( *)")
+var catchCompile = makeRegex("( *)(\\]( )+catch( )+\\[" + anyAndNewline + "*)( *)")
 var processfunc func(codeseg code) (any, bool)
 var linefunc func(i int, codearray []code) (any, int)
 var opperators = [][]string{
@@ -261,7 +263,7 @@ func split_by_semicolon_and_newline(str string) []code {
 	return output
 }
 
-var getCodeInIndent = func(i int, codearray []code, isIf bool) ([]code, int) {
+var getCodeInIndent = func(i int, codearray []code, TYPE string) ([]code, int) {
 	var result []code
 	indent := 0
 	start := codearray[i]
@@ -274,7 +276,7 @@ var getCodeInIndent = func(i int, codearray []code, isIf bool) ([]code, int) {
 		if i == len(codearray) {
 			log.Fatal("invalid opening brackets starting on line ", start.line+1, ": ", start.code)
 		}
-		if (closeCompile.MatchString(codearray[i].code) && !setVariableCompile.MatchString(codearray[i].code) && !switchCloseCompile.MatchString(codearray[i].code)) || (isIf && (elseCompile.MatchString(codearray[i].code) || elseifCompile.MatchString(codearray[i].code))) {
+		if (TYPE != "try" && closeCompile.MatchString(codearray[i].code) && !setVariableCompile.MatchString(codearray[i].code) && !switchCloseCompile.MatchString(codearray[i].code)) || (TYPE == "if" && (elseCompile.MatchString(codearray[i].code) || elseifCompile.MatchString(codearray[i].code)) || (TYPE == "try" && catchCompile.MatchString(codearray[i].code))) {
 			indent--
 			if indent < 0 {
 				break
@@ -435,7 +437,7 @@ var translateline = func(i int, codearray []code) (any, int) {
 		if !worked {
 			log.Fatal("invalid value on line ", codeseg.line+1)
 		}
-		codedata, x := getCodeInIndent(i, codearray, false)
+		codedata, x := getCodeInIndent(i, codearray, "none")
 		codeoutput := []any{}
 
 		codelen := len(codedata)
@@ -449,6 +451,29 @@ var translateline = func(i int, codearray []code) (any, int) {
 			condition: condition,
 			code:      codeoutput,
 		}, x
+	} else if tryCompile.MatchString(codeseg.code) {
+		codedata, x := getCodeInIndent(i, codearray, "try")
+		codeoutput := []any{}
+
+		codelen := len(codedata)
+		for i := 0; i < codelen; {
+			resp, x := linefunc(i, codedata)
+			i = x
+			codeoutput = append(codeoutput, resp)
+		}
+		catchdata, x := getCodeInIndent(x-1, codearray, "none")
+		catchoutput := []any{}
+		catchlen := len(catchdata)
+		for i := 0; i < catchlen; {
+			resp, x := linefunc(i, catchdata)
+			i = x
+			catchoutput = append(catchoutput, resp)
+		}
+		return tryType{
+			code:  codeoutput,
+			catch: catchoutput,
+			line:  codeseg.line,
+		}, x
 	} else if ifCompile.MatchString(codeseg.code) {
 		str := strings.Trim(codeseg.code, " ")
 		strlen := len(str)
@@ -459,7 +484,7 @@ var translateline = func(i int, codearray []code) (any, int) {
 		if !worked {
 			log.Fatal("invalid value on line ", codeseg.line+1, ": ", split[0])
 		}
-		codedata, x := getCodeInIndent(i, codearray, true)
+		codedata, x := getCodeInIndent(i, codearray, "if")
 		codeoutput := []any{}
 
 		codelen := len(codedata)
@@ -484,7 +509,7 @@ var translateline = func(i int, codearray []code) (any, int) {
 				if !worked {
 					log.Fatal("invalid value on line ", codearray[x-1].line+1, ": ", split[0])
 				}
-				codedata, j := getCodeInIndent(x-1, codearray, true)
+				codedata, j := getCodeInIndent(x-1, codearray, "if")
 				codeoutput := []any{}
 				x = j
 				codelen := len(codedata)
@@ -503,7 +528,7 @@ var translateline = func(i int, codearray []code) (any, int) {
 			}
 		}
 		if elseCompile.MatchString(codearray[x-1].code) {
-			codedata, j := getCodeInIndent(x-1, codearray, false)
+			codedata, j := getCodeInIndent(x-1, codearray, "none")
 			x += j - 3
 			codelen := len(codedata)
 			for i := 0; i < codelen; {
@@ -525,7 +550,7 @@ var translateline = func(i int, codearray []code) (any, int) {
 		argstr := functioninfo[1]
 		argstr = argstr[:len(argstr)-1]
 		args := getParamNames(argstr, codeseg.line)
-		codedata, x := getCodeInIndent(i, codearray, false)
+		codedata, x := getCodeInIndent(i, codearray, "none")
 		codeoutput := []any{}
 
 		codelen := len(codedata)

@@ -1,6 +1,5 @@
-i = 0
-while yes [
-    sleep(1000)
-    i = i + 1
-    log(i)
+try [
+    grgre('cool')
+] catch [
+    log('cool error:',err)
 ]
