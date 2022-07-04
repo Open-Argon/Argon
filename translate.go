@@ -277,7 +277,6 @@ var getCodeInIndent = func(i int, codearray []code, isIf bool) ([]code, int) {
 		if (closeCompile.MatchString(codearray[i].code) && !setVariableCompile.MatchString(codearray[i].code) && !switchCloseCompile.MatchString(codearray[i].code)) || (isIf && (elseCompile.MatchString(codearray[i].code) || elseifCompile.MatchString(codearray[i].code))) {
 			indent--
 			if indent < 0 {
-				fmt.Println(codearray[i].code)
 				break
 			}
 		} else if openCompile.MatchString(codearray[i].code) && !switchCloseCompile.MatchString(codearray[i].code) {
@@ -410,7 +409,7 @@ var translateline = func(i int, codearray []code) (any, int) {
 	} else if setVariableCompile.MatchString(codeseg.code) {
 		VAR := strings.Split(codeseg.code, "=")
 		firstSplit := strings.Split(strings.Trim(VAR[0], " "), " ")
-		TYPE := "var"
+		TYPE := "preset"
 		if len(firstSplit) > 1 {
 			TYPE = firstSplit[0]
 		}
@@ -513,8 +512,6 @@ var translateline = func(i int, codearray []code) (any, int) {
 				break
 			}
 		}
-		fmt.Println(ifstatementcode)
-		fmt.Println(elsecode)
 		return ifstatement{
 			statments: ifstatementcode,
 			FALSE:     elsecode,

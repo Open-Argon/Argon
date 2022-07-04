@@ -55,7 +55,7 @@ func anyToArgon(x any, quote bool) string {
 		}
 		return "[" + strings.Join(output, ", ") + "]"
 	case variable:
-		return x.variable
+		return "<function " + x.variable + ">"
 	default:
 		return fmt.Sprint(x)
 	}
@@ -97,8 +97,9 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 	case whileLoop:
 		whileloop := codeseg
 		resp, _ := runop(whileloop.condition, origin, vargroups)
+		vari := append(vargroups, map[string]variableValue{})
 		for boolean(resp) {
-			ty, val, _ := run(whileloop.code, origin, vargroups)
+			ty, val, _ := run(whileloop.code, origin, vari)
 			if ty == "break" {
 				break
 			} else if ty == "continue" {
@@ -110,15 +111,16 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 		}
 		return nil, nil
 	case ifstatement:
+		vari := append(vargroups, map[string]variableValue{})
 		iff := codeseg
 		for i := 0; i < len(iff.statments); i++ {
 			resp, _ := runop(iff.statments[i].condition, origin, vargroups)
 			if boolean(resp) {
-				ty, val, _ := run(iff.statments[i].code, origin, vargroups)
+				ty, val, _ := run(iff.statments[i].code, origin, vari)
 				return val, ty
 			}
 		}
-		ty, val, _ := run(iff.FALSE, origin, vargroups)
+		ty, val, _ := run(iff.FALSE, origin, vari)
 		return val, ty
 	case importType:
 		resp, _ := runop(codeseg.path, origin, vargroups)
@@ -212,16 +214,24 @@ func callFunc(call funcCallType, vargroups []map[string]variableValue, origin st
 
 func setVariableVal(x setVariable, vargroups [](map[string]variableValue), origin string) {
 	var variable map[string]variableValue = nil
-	for i := len(vargroups) - 1; i >= 0; i-- {
-		if vargroups[i][x.variable].EXISTS != nil {
-			variable = vargroups[i]
-			break
+	if x.TYPE == "preset" {
+		for i := len(vargroups) - 1; i >= 0; i-- {
+			if vargroups[i][x.variable].EXISTS != nil {
+				variable = vargroups[i]
+				break
+			}
 		}
+	} else {
+		variable = vargroups[len(vargroups)-1]
 	}
 	if variable[x.variable].EXISTS == nil {
 		resp, _ := runop(x.value, origin, vargroups)
+		var TYPE = x.TYPE
+		if TYPE == "preset" {
+			TYPE = "var"
+		}
 		vargroups[len(vargroups)-1][x.variable] = variableValue{
-			TYPE:   x.TYPE,
+			TYPE:   TYPE,
 			EXISTS: true,
 			VAL:    resp,
 			origin: origin,
@@ -229,8 +239,12 @@ func setVariableVal(x setVariable, vargroups [](map[string]variableValue), origi
 		}
 	} else if variable[x.variable].TYPE == "var" {
 		resp, _ := runop(x.value, origin, vargroups)
+		var TYPE = x.TYPE
+		if TYPE == "preset" {
+			TYPE = "var"
+		}
 		variable[x.variable] = variableValue{
-			TYPE:   x.TYPE,
+			TYPE:   TYPE,
 			EXISTS: variable[x.variable].EXISTS,
 			VAL:    resp,
 			origin: origin,
