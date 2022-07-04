@@ -1,4 +1,3 @@
-
 sub name_good(name) [
     if name == "william" [
         return ('cool name')
@@ -12,4 +11,3 @@ sub name_good(name) [
 ]
 
 log(name_good(input('name: ')))
-
