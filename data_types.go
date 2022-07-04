@@ -2,7 +2,7 @@ package main
 
 type opperator struct {
 	t    int
-	vals []interface{}
+	vals []any
 	line int
 }
 
@@ -13,46 +13,50 @@ type variable struct {
 
 type funcCallType struct {
 	name string
-	args []interface{}
+	args []any
 	line int
 }
 
 type whileLoop struct {
-	condition interface{}
-	code      []interface{}
+	condition any
+	code      []any
 }
 
 type variableValue struct {
 	TYPE   string
-	VAL    interface{}
-	EXISTS interface{}
+	VAL    any
+	EXISTS any
 	origin string
 	FUNC   bool
 }
 
 type importType struct {
-	path     interface{}
+	path     any
 	toImport any
 	line     int
 }
 
+type iftype struct {
+	condition any
+	code      []any
+}
+
 type ifstatement struct {
-	condition interface{}
-	TRUE      []interface{}
-	FALSE     []interface{}
+	statments []iftype
+	FALSE     []any
 }
 
 type setVariable struct {
 	TYPE     string
 	variable string
-	value    interface{}
+	value    any
 	line     int
 }
 
 type setFunction struct {
 	name string
 	args []string
-	code []interface{}
+	code []any
 	line int
 }
 

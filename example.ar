@@ -1,5 +1,9 @@
-from 'random' import randint
+name = input('name: ')
 
-while yes [
-    log(randint(1, 10))
+if name == "william" [
+    log('cool name')
+] else if name == "shrek" [
+    log('shrexy name')
+] else [
+    log('trash name')
 ]

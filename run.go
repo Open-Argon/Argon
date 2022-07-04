@@ -111,14 +111,15 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 		return nil, nil
 	case ifstatement:
 		iff := codeseg
-		resp, _ := runop(iff.condition, origin, vargroups)
-		if boolean(resp) {
-			ty, val, _ := run(iff.TRUE, origin, vargroups)
-			return val, ty
-		} else {
-			ty, val, _ := run(iff.FALSE, origin, vargroups)
-			return val, ty
+		for i := 0; i < len(iff.statments); i++ {
+			resp, _ := runop(iff.statments[i].condition, origin, vargroups)
+			if boolean(resp) {
+				ty, val, _ := run(iff.statments[i].code, origin, vargroups)
+				return val, ty
+			}
 		}
+		ty, val, _ := run(iff.FALSE, origin, vargroups)
+		return val, ty
 	case importType:
 		resp, _ := runop(codeseg.path, origin, vargroups)
 		importvars := importMod(resp.(string), filepath.Dir(origin))

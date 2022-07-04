@@ -11,9 +11,9 @@ completed:
     - import
     - selective importing
     - fix close square bracket not being allowed in open indentation
+    - items (arrays)
+    - add else if to if statments
 
 incompleted:
     - books (objects)
-    - items (arrays)
-    - add else if to if statments
     - add try catch
