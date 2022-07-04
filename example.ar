@@ -1,9 +1,15 @@
-name = input('name: ')
 
-if name == "william" [
-    log('cool name')
-] else if name == "shrek" [
-    log('shrexy name')
-] else [
-    log('trash name')
+sub name_good(name) [
+    if name == "william" [
+        return ('cool name')
+    ] else if name == "shrek" [
+        return ('shrexy name')
+    ] else if name == "oli" [
+        return ('donkey shrek name')
+    ] else [
+        return ('trash name')
+    ]
 ]
+
+log(name_good(input('name: ')))
+
