@@ -1,4 +1,4 @@
-# CURRENTLY IN DEVELOPMENT!
+# CURRENTLY IN BETA!
 
 <div align="center">
 <p>
