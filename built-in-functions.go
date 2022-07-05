@@ -81,10 +81,13 @@ func exec(x ...any) (any, any) {
 }
 
 func eval(x ...any) (any, any) {
-	resp, _ := translateprocess(code{
+	resp, _, err := translateprocess(code{
 		code: x[0].(string),
 		line: 0,
 	})
+	if err != nil {
+		return nil, err
+	}
 	return resp, nil
 }
 

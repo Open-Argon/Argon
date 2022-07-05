@@ -92,14 +92,20 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 				return codeseg, "value"
 			}
 		}
-		return ("undecared variable " + codeseg.variable + " on line " + fmt.Sprint(codeseg.line+1)), "error"
+		return ("undecared variable " + codeseg.variable + ": " + origin + ":" + fmt.Sprint(codeseg.line+1)), "error"
 	case funcCallType:
 		resp, ty := callFunc(codeseg, vargroups, origin)
 		return resp, ty
+	case errorType:
+		resp, _ := runprocess(codeseg.val, origin, vargroups)
+		return resp, "error"
 	case itemsType:
 		vals := []any{}
 		for i := 0; i < len(codeseg.vals); i++ {
-			resp, _ := runprocess(codeseg.vals[i], origin, vargroups)
+			resp, err := runprocess(codeseg.vals[i], origin, vargroups)
+			if err != nil {
+				return "invalid value: " + origin + ":" + fmt.Sprint(codeseg.line+1), "error"
+			}
 			vals = append(vals, resp)
 		}
 		return vals, "value"
@@ -180,7 +186,7 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 		if codeseg.val != nil {
 			vars, worked := runop(codeseg.val, origin, vargroups)
 			if worked == nil {
-				return "return statement must return a value on line " + fmt.Sprint(codeseg.line+1), "error"
+				return "return statement must return a value: " + origin + ":" + fmt.Sprint(codeseg.line+1), "error"
 			}
 			val = vars
 		}
@@ -202,7 +208,7 @@ func callFunc(call funcCallType, vargroups []map[string]variableValue, origin st
 		}
 	}
 	if variables[call.name].EXISTS == nil {
-		return ("undecared function '" + call.name + "' on line " + fmt.Sprint(call.line+1)), "error"
+		return ("undecared function '" + call.name + "': " + origin + ":" + fmt.Sprint(call.line+1)), "error"
 	}
 	callable := call
 	for variables[callable.name].TYPE != "func" && variables[callable.name].TYPE != "init_function" && fmt.Sprint(reflect.TypeOf(variables[callable.name].VAL)) == "main.variable" {
@@ -215,13 +221,16 @@ func callFunc(call funcCallType, vargroups []map[string]variableValue, origin st
 		}
 	}
 	if variables[callable.name].TYPE != "func" && variables[callable.name].TYPE != "init_function" {
-		return ("'" + call.name + "' is not a function on line " + fmt.Sprint(call.line+1)), "error"
+		return ("'" + call.name + "' is not a function: " + origin + ":" + fmt.Sprint(call.line+1)), "error"
 	}
 	if variables[callable.name].FUNC {
 
 		argvals := []any{}
 		for i := 0; i < len(callable.args); i++ {
-			resp, _ := runprocess(callable.args[i], origin, vargroups)
+			resp, ty := runprocess(callable.args[i], origin, vargroups)
+			if ty == "error" {
+				return resp, ty
+			}
 			argvals = append(argvals, resp)
 		}
 		val, err := variables[callable.name].VAL.(func(...any) (any, any))(argvals...)
@@ -243,7 +252,7 @@ func callFunc(call funcCallType, vargroups []map[string]variableValue, origin st
 		}
 		ty, val, _ := run(variables[callable.name].VAL.(setFunction).code, origin, append(vargroups, modules[variables[callable.name].origin], argvars))
 		if ty != "return" && ty != nil {
-			return fmt.Sprint(ty) + " is not allowed in function on line " + fmt.Sprint(callable.line+1), "error"
+			return fmt.Sprint(ty) + " is not allowed in function: " + origin + ":" + fmt.Sprint(callable.line+1), "error"
 		}
 		return val, "value"
 	}
@@ -288,7 +297,7 @@ func setVariableVal(x setVariable, vargroups [](map[string]variableValue), origi
 			FUNC:   variable[x.variable].FUNC,
 		}
 	} else {
-		return ("cannot edit " + variable[x.variable].TYPE + " variable on line " + fmt.Sprint(x.line+1))
+		return ("cannot edit " + variable[x.variable].TYPE + " variable: " + origin + ":" + fmt.Sprint(x.line+1))
 	}
 	return nil
 }
@@ -314,7 +323,7 @@ func setFunctionVal(x setFunction, vargroups []map[string]variableValue, origin 
 		vari.VAL = x
 		vari.FUNC = false
 	} else {
-		return ("cannot edit " + variable[x.name].TYPE + " variable on line " + fmt.Sprint(x.line+1))
+		return ("cannot edit " + variable[x.name].TYPE + " variable: " + origin + ":" + fmt.Sprint(x.line+1))
 	}
 	return nil
 }

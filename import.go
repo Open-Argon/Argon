@@ -44,13 +44,21 @@ func importMod(realpath string, origin string) (map[string]variableValue, any) {
 		if err != nil {
 			return map[string]variableValue{}, err
 		}
-		runStr(string(data), p, modules[p])
+		stringdata := string(data)
+		moduledata := modules[p]
+		_, e := runStr(stringdata, p, moduledata)
+		if e != nil {
+			return map[string]variableValue{}, e
+		}
 	}
 	return modules[p], nil
 }
 
 func runStr(str string, origin string, variables map[string]variableValue) ([][]any, any) {
-	translated := translate(str)
+	translated, err := translate(str)
+	if err != nil {
+		return nil, err
+	}
 	ty, _, resp := run(translated, origin, []map[string]variableValue{vars, variables})
 	if ty != nil {
 		if ty == "error" {

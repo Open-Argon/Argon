@@ -1,5 +1,5 @@
 try [
-    grgre('cool')
+    error "wow"
 ] catch [
-    log('cool error:',err)
+    log('lol, error:', err)
 ]

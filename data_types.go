@@ -83,3 +83,7 @@ type tryType struct {
 	catch []any
 	line  int
 }
+
+type errorType struct {
+	val any
+}
