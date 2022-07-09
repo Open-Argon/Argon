@@ -8,11 +8,12 @@ type opperator struct {
 
 type variable struct {
 	variable string
+	splices  []any
 	line     int
 }
 
 type funcCallType struct {
-	name string
+	name variable
 	args []any
 	line int
 }
@@ -48,7 +49,7 @@ type ifstatement struct {
 
 type setVariable struct {
 	TYPE     string
-	variable string
+	variable variable
 	value    any
 	line     int
 }

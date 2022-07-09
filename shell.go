@@ -23,7 +23,7 @@ func shell() {
 			val, _ := ArgonInput("... ")
 			tempstr = val.(string)
 		}
-		if openCompile.MatchString(tempstr) && !setVariableCompile.MatchString(tempstr) {
+		if opensIndent(tempstr) {
 			indent--
 		} else if closeCompile.MatchString(tempstr) {
 			indent++

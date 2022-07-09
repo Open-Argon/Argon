@@ -56,6 +56,7 @@ func importMod(realpath string, origin string) (map[string]variableValue, any) {
 
 func runStr(str string, origin string, variables map[string]variableValue) ([][]any, any) {
 	translated, err := translate(str)
+	fmt.Println(origin, ":", translated)
 	if err != nil {
 		return nil, err
 	}

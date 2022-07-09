@@ -80,6 +80,21 @@ while (yes) [
 ]
 ```
 
+Import Modules:
+
+- import the whole module
+   ```javascript
+   import 'maths'
+
+   log(pi)
+   ```
+- import specific functions and variables from the module
+   ```javascript
+   from 'maths' import sqrt, sin, cos, tan, pi, e
+
+   log(pi)
+   ```
+
 Items (Lists or Arrays):
 
 ```javascript

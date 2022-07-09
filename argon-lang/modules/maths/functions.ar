@@ -28,12 +28,17 @@ sub sqrt(x) [
     if x equals 0 [
         return 0
     ]
+    i = 0
     while yes [
+        if i > 10000 [
+            error "sqrt: could not find a solution for the square root of " + x
+        ]
         guess = (last_guess + x / last_guess) / 2
         if abs(guess - last_guess) < 1e-5 [
             return guess
         ]
         last_guess = guess
+        i = i + 1
     ]
 ]
 

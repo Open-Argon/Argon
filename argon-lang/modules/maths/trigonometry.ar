@@ -1,36 +1,30 @@
 # trigonometry
 # a sub library of maths
 
-from 'functions' import abs, sqrt
+from 'functions' import abs, sqrt, mod
 
+# trigonometry
 
 sub sin(theta) [
-    x = ((theta)/180) mod 1
-    result = 0-(((x - 0.5)**2) * 4) + 1
-    if ((theta div 180) div 1) % 2 != 0 [
-        result = result * -1
+    result = -(mod(theta divided by 180, 1) minus .5) to the power of 2 times 4 plus 1
+    if ((theta div 180) div 1) mod 2 is not equal to 0 [
+        result = result times -1
     ]
     return result
-]
+] 
 
 sub cos(theta) [
-    return sin(theta + 90)
+    return sin(theta plus 90)
 ]
 
 sub tan(theta) [
-    return sin(theta) / cos(theta)
+    return sin(theta) divided by cos(theta)
 ]
 
 # inverse trigonometry
 
 sub asin(result) [
-    theta = result
-    theta = (sqrt((0-(result - 1))/4)+0.5)
-    theta = (theta * 180) mod 180
-    if result < 0 [
-        theta = (0-theta) - 180
-    ]
-    return theta
+    return (sqrt(abs(-(result minus 1) divided by 4)) plus .5) times 180
 ]
 
 sub acos(result) [
@@ -38,5 +32,5 @@ sub acos(result) [
 ]
 
 sub atan(result) [
-    return asin(result) * acos(result)
+    return
 ]

@@ -1,5 +1,5 @@
-try [
-    error "wow"
-] catch [
-    log('lol, error:', err)
-]
+from 'maths/trigonometry' import tan, atan
+
+x = tan(19)
+y = atan(x)
+log(x, tan(y), y)

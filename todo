@@ -19,3 +19,7 @@ incompleted:
     - books (objects)
     - add del to delete variables
     - add origin to translate.go
+    - add edit variable assignment
+    - allow negetive variables without needing 0 in front (e.g. -x instead of 0-x)
+    - add index and key to variable assignment and reading
+    - fix atan function in maths module

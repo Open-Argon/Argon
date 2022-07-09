@@ -124,7 +124,10 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 		return resp, ty
 	case whileLoop:
 		whileloop := codeseg
-		resp, _ := runop(whileloop.condition, origin, vargroups)
+		resp, ty := runop(whileloop.condition, origin, vargroups)
+		if ty == "error" {
+			return resp, ty
+		}
 		vari := append(vargroups, map[string]variableValue{})
 		for boolean(resp) {
 			ty, val, _ := run(whileloop.code, origin, vari)
@@ -135,14 +138,20 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 			} else if ty == "return" || ty == "error" {
 				return val, ty
 			}
-			resp, _ = runop(whileloop.condition, origin, vargroups)
+			resp, ty = runop(whileloop.condition, origin, vargroups)
+			if ty == "error" {
+				return resp, ty
+			}
 		}
 		return nil, nil
 	case ifstatement:
 		vari := append(vargroups, map[string]variableValue{})
 		iff := codeseg
 		for i := 0; i < len(iff.statments); i++ {
-			resp, _ := runop(iff.statments[i].condition, origin, vargroups)
+			resp, ty := runop(iff.statments[i].condition, origin, vargroups)
+			if ty == "error" {
+				return resp, ty
+			}
 			if boolean(resp) {
 				ty, val, _ := run(iff.statments[i].code, origin, vari)
 				return val, ty
@@ -151,7 +160,10 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 		ty, val, _ := run(iff.FALSE, origin, vari)
 		return val, ty
 	case importType:
-		resp, _ := runop(codeseg.path, origin, vargroups)
+		resp, ty := runop(codeseg.path, origin, vargroups)
+		if ty == "error" {
+			return resp, ty
+		}
 		importvars, err := importMod(resp.(string), filepath.Dir(origin))
 		if err != nil {
 			return err, "error"
@@ -202,28 +214,29 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 func callFunc(call funcCallType, vargroups []map[string]variableValue, origin string) (any, any) {
 	var variables map[string]variableValue
 	for i := len(vargroups) - 1; i >= 0; i-- {
-		if vargroups[i][call.name].EXISTS != nil {
+		if vargroups[i][call.name.variable].EXISTS != nil {
 			variables = vargroups[i]
 			break
 		}
 	}
-	if variables[call.name].EXISTS == nil {
-		return ("undecared function '" + call.name + "': " + origin + ":" + fmt.Sprint(call.line+1)), "error"
+
+	if variables[call.name.variable].EXISTS == nil {
+		return ("undecared function '" + call.name.variable + "': " + origin + ":" + fmt.Sprint(call.line+1)), "error"
 	}
 	callable := call
-	for variables[callable.name].TYPE != "func" && variables[callable.name].TYPE != "init_function" && fmt.Sprint(reflect.TypeOf(variables[callable.name].VAL)) == "main.variable" {
-		callable = funcCallType{name: variables[callable.name].VAL.(variable).variable, args: callable.args, line: callable.line}
+	for variables[callable.name.variable].TYPE != "func" && variables[callable.name.variable].TYPE != "init_function" && fmt.Sprint(reflect.TypeOf(variables[callable.name.variable].VAL)) == "main.variable" {
+		callable = funcCallType{name: variables[callable.name.variable].VAL.(variable), args: callable.args, line: callable.line}
 	}
 	for i := len(vargroups) - 1; i >= 0; i-- {
-		if vargroups[i][callable.name].EXISTS != nil {
+		if vargroups[i][callable.name.variable].EXISTS != nil {
 			variables = vargroups[i]
 			break
 		}
 	}
-	if variables[callable.name].TYPE != "func" && variables[callable.name].TYPE != "init_function" {
-		return ("'" + call.name + "' is not a function: " + origin + ":" + fmt.Sprint(call.line+1)), "error"
+	if variables[callable.name.variable].TYPE != "func" && variables[callable.name.variable].TYPE != "init_function" {
+		return ("'" + call.name.variable + "' is not a function: " + origin + ":" + fmt.Sprint(call.line+1)), "error"
 	}
-	if variables[callable.name].FUNC {
+	if variables[callable.name.variable].FUNC {
 
 		argvals := []any{}
 		for i := 0; i < len(callable.args); i++ {
@@ -233,7 +246,7 @@ func callFunc(call funcCallType, vargroups []map[string]variableValue, origin st
 			}
 			argvals = append(argvals, resp)
 		}
-		val, err := variables[callable.name].VAL.(func(...any) (any, any))(argvals...)
+		val, err := variables[callable.name.variable].VAL.(func(...any) (any, any))(argvals...)
 		if err != nil {
 			return err, "error"
 		}
@@ -241,8 +254,11 @@ func callFunc(call funcCallType, vargroups []map[string]variableValue, origin st
 	} else {
 		argvars := make(map[string]variableValue)
 		for i := 0; i < len(callable.args); i++ {
-			resp, _ := runprocess(callable.args[i], origin, vargroups)
-			name := variables[callable.name].VAL.(setFunction).args[i]
+			resp, ty := runprocess(callable.args[i], origin, vargroups)
+			if ty == "error" {
+				return resp, ty
+			}
+			name := variables[callable.name.variable].VAL.(setFunction).args[i]
 			argvars[name] = variableValue{
 				VAL:    resp,
 				TYPE:   "var",
@@ -250,8 +266,8 @@ func callFunc(call funcCallType, vargroups []map[string]variableValue, origin st
 				FUNC:   false,
 			}
 		}
-		ty, val, _ := run(variables[callable.name].VAL.(setFunction).code, origin, append(vargroups, modules[variables[callable.name].origin], argvars))
-		if ty != "return" && ty != nil {
+		ty, val, _ := run(variables[callable.name.variable].VAL.(setFunction).code, origin, append(vargroups, modules[variables[callable.name.variable].origin], argvars))
+		if ty != "return" && ty != "error" && ty != nil {
 			return fmt.Sprint(ty) + " is not allowed in function: " + origin + ":" + fmt.Sprint(callable.line+1), "error"
 		}
 		return val, "value"
@@ -262,7 +278,7 @@ func setVariableVal(x setVariable, vargroups [](map[string]variableValue), origi
 	var variable map[string]variableValue = nil
 	if x.TYPE == "preset" {
 		for i := len(vargroups) - 1; i >= 0; i-- {
-			if vargroups[i][x.variable].EXISTS != nil {
+			if vargroups[i][x.variable.variable].EXISTS != nil {
 				variable = vargroups[i]
 				break
 			}
@@ -270,34 +286,40 @@ func setVariableVal(x setVariable, vargroups [](map[string]variableValue), origi
 	} else {
 		variable = vargroups[len(vargroups)-1]
 	}
-	if variable[x.variable].EXISTS == nil {
-		resp, _ := runop(x.value, origin, vargroups)
+	if variable[x.variable.variable].EXISTS == nil {
+		resp, ty := runop(x.value, origin, vargroups)
+		if ty == "error" {
+			return resp
+		}
 		var TYPE = x.TYPE
 		if TYPE == "preset" {
 			TYPE = "var"
 		}
-		vargroups[len(vargroups)-1][x.variable] = variableValue{
+		vargroups[len(vargroups)-1][x.variable.variable] = variableValue{
 			TYPE:   TYPE,
 			EXISTS: true,
 			VAL:    resp,
 			origin: origin,
 			FUNC:   false,
 		}
-	} else if variable[x.variable].TYPE == "var" {
-		resp, _ := runop(x.value, origin, vargroups)
+	} else if variable[x.variable.variable].TYPE == "var" {
+		resp, ty := runop(x.value, origin, vargroups)
+		if ty == "error" {
+			return resp
+		}
 		var TYPE = x.TYPE
 		if TYPE == "preset" {
 			TYPE = "var"
 		}
-		variable[x.variable] = variableValue{
+		variable[x.variable.variable] = variableValue{
 			TYPE:   TYPE,
-			EXISTS: variable[x.variable].EXISTS,
+			EXISTS: variable[x.variable.variable].EXISTS,
 			VAL:    resp,
 			origin: origin,
-			FUNC:   variable[x.variable].FUNC,
+			FUNC:   variable[x.variable.variable].FUNC,
 		}
 	} else {
-		return ("cannot edit " + variable[x.variable].TYPE + " variable: " + origin + ":" + fmt.Sprint(x.line+1))
+		return ("cannot edit " + variable[x.variable.variable].TYPE + " variable: " + origin + ":" + fmt.Sprint(x.line+1))
 	}
 	return nil
 }
@@ -394,7 +416,10 @@ opperationloop:
 	for i := 0; i < len(opperation.vals); i++ {
 		switch opperation.t {
 		case 0:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -406,27 +431,39 @@ opperationloop:
 				}
 			}
 		case 1:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if boolean(x) {
 				output = x
 				break opperationloop
 			}
 		case 2:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
 				output = xiny(output, x.([]any))
 			}
 		case 3:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
 				output = !xiny(output, x.([]interface{}))
 			}
 		case 4:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -442,7 +479,10 @@ opperationloop:
 				output = (out <= in)
 			}
 		case 5:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -458,7 +498,10 @@ opperationloop:
 				output = (out >= in)
 			}
 		case 6:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -474,7 +517,10 @@ opperationloop:
 				output = (out < in)
 			}
 		case 7:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -490,21 +536,30 @@ opperationloop:
 				output = (out > in)
 			}
 		case 8:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
 				output = (output != x)
 			}
 		case 9:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
 				output = (output == x)
 			}
 		case 11:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -520,7 +575,10 @@ opperationloop:
 				output = (out - in)
 			}
 		case 10:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -531,7 +589,10 @@ opperationloop:
 				output = val
 			}
 		case 12:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -547,7 +608,10 @@ opperationloop:
 				output = (out * in)
 			}
 		case 14:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -563,7 +627,10 @@ opperationloop:
 				output = math.Floor(out / in)
 			}
 		case 13:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -579,7 +646,10 @@ opperationloop:
 				output = math.Mod(out, in)
 			}
 		case 15:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -595,7 +665,10 @@ opperationloop:
 				output = (out / in)
 			}
 		case 16:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
@@ -611,7 +684,10 @@ opperationloop:
 				output = math.Pow(out, 1/in)
 			}
 		case 17:
-			x, _ := runop(opperation.vals[i], origin, vargroups)
+			x, ty := runop(opperation.vals[i], origin, vargroups)
+			if ty == "error" {
+				return x, ty
+			}
 			if output == nil {
 				output = x
 			} else {
