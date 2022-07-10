@@ -1,5 +1,7 @@
-from 'maths/trigonometry' import tan, atan
+var input = input('text: ')
 
-x = tan(19)
-y = atan(x)
-log(x, tan(y), y)
+i = 0
+while i < len(input) [
+    log(input[i])
+    i = i + 1
+]

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -61,8 +60,14 @@ func anyToArgon(x any, quote bool) string {
 			output = append(output, anyToArgon(x[i], true))
 		}
 		return "[" + strings.Join(output, ", ") + "]"
-	case variable:
-		return "<function " + x.variable + ">"
+	case builtinFunc:
+		return fmt.Sprint("<function ", x.name, ">")
+	case callableFunction:
+		if x.name != nil {
+			return fmt.Sprint("<function ", x.name, ">")
+		} else {
+			return "<anonymous function>"
+		}
 	default:
 		return fmt.Sprint(x)
 	}
@@ -86,11 +91,7 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 			myvar = vargroups[len(vargroups)-1][codeseg.variable]
 		}
 		if myvar.EXISTS != nil {
-			if myvar.TYPE != "func" && myvar.TYPE != "init_function" {
-				return myvar.VAL, "value"
-			} else {
-				return codeseg, "value"
-			}
+			return myvar.VAL, "value"
 		}
 		return ("undecared variable " + codeseg.variable + ": " + origin + ":" + fmt.Sprint(codeseg.line+1)), "error"
 	case funcCallType:
@@ -164,7 +165,7 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 		if ty == "error" {
 			return resp, ty
 		}
-		importvars, err := importMod(resp.(string), filepath.Dir(origin))
+		importvars, err := importMod(fmt.Sprint(resp), filepath.Dir(origin), false)
 		if err != nil {
 			return err, "error"
 		}
@@ -193,16 +194,79 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 		} else {
 			return value, "error"
 		}
+	case indexType:
+		to, ty := runop(codeseg.to, origin, vargroups)
+		if ty == "error" {
+			return to, ty
+		}
+
+		index, ty := runop(codeseg.index, origin, vargroups)
+		if ty == "error" {
+			return to, ty
+		}
+		switch value := to.(type) {
+		case string:
+			index, err := number(index)
+			if err != nil {
+				return err, "error"
+			}
+			i := int(index)
+			if i >= len(value) {
+				return "index out of range on line " + origin + ":" + fmt.Sprint(codeseg.line+1), "error"
+			} else if i < 0 {
+				i = len(value) + i
+			}
+			return string(value[i]), "value"
+		case []any:
+			index, err := number(index)
+			if err != nil {
+				return err, "error"
+			}
+			i := int(index)
+			if i >= len(value) {
+				return "index out of range on line " + origin + ":" + fmt.Sprint(codeseg.line+1), "error"
+			} else if i < 0 {
+				i = len(value) + i
+			}
+			return value[i], "value"
+		case map[string]any:
+			key := fmt.Sprint(index)
+			if value[key] == nil {
+				return "'" + key + "' not in value on line " + origin + ":" + fmt.Sprint(codeseg.line+1), "error"
+			}
+			return value[key], "value"
+		default:
+			return "value not indexable " + origin + ":" + fmt.Sprint(codeseg.line+1), "error"
+		}
 	case returnType:
 		var val any = nil
+		var ty any = "return"
 		if codeseg.val != nil {
 			vars, worked := runop(codeseg.val, origin, vargroups)
 			if worked == nil {
 				return "return statement must return a value: " + origin + ":" + fmt.Sprint(codeseg.line+1), "error"
+			} else if worked == "error" {
+				return vars, "error"
 			}
 			val = vars
 		}
-		return val, "return"
+		return val, ty
+	case deleteType:
+		var varigroup map[string]variableValue
+		for i := len(vargroups) - 1; i >= 0; i-- {
+			if vargroups[i][codeseg.variable.variable].EXISTS != nil {
+				varigroup = vargroups[i]
+				break
+			}
+		}
+		if varigroup[codeseg.variable.variable].EXISTS == nil {
+			varigroup = vargroups[len(vargroups)-1]
+		}
+		if varigroup[codeseg.variable.variable].EXISTS != nil {
+			delete(varigroup, codeseg.variable.variable)
+			return nil, nil
+		}
+		return "undeclared variable " + codeseg.variable.variable + ": " + origin + ":" + fmt.Sprint(codeseg.line+1), "error"
 	case breakType:
 		return nil, "break"
 	case continueType:
@@ -212,53 +276,24 @@ func runprocess(codeseg any, origin string, vargroups []map[string]variableValue
 }
 
 func callFunc(call funcCallType, vargroups []map[string]variableValue, origin string) (any, any) {
-	var variables map[string]variableValue
-	for i := len(vargroups) - 1; i >= 0; i-- {
-		if vargroups[i][call.name.variable].EXISTS != nil {
-			variables = vargroups[i]
-			break
-		}
+	resp, ty := runprocess(call.FUNC, origin, vargroups)
+	if ty == "error" {
+		return resp, ty
 	}
 
-	if variables[call.name.variable].EXISTS == nil {
-		return ("undecared function '" + call.name.variable + "': " + origin + ":" + fmt.Sprint(call.line+1)), "error"
-	}
-	callable := call
-	for variables[callable.name.variable].TYPE != "func" && variables[callable.name.variable].TYPE != "init_function" && fmt.Sprint(reflect.TypeOf(variables[callable.name.variable].VAL)) == "main.variable" {
-		callable = funcCallType{name: variables[callable.name.variable].VAL.(variable), args: callable.args, line: callable.line}
-	}
-	for i := len(vargroups) - 1; i >= 0; i-- {
-		if vargroups[i][callable.name.variable].EXISTS != nil {
-			variables = vargroups[i]
-			break
+	switch variable := resp.(type) {
+	case callableFunction:
+		if len(call.args) != len(variable.args) {
+			return "invalid number of arguments: " + origin + ":" + fmt.Sprint(call.line+1), "error"
 		}
-	}
-	if variables[callable.name.variable].TYPE != "func" && variables[callable.name.variable].TYPE != "init_function" {
-		return ("'" + call.name.variable + "' is not a function: " + origin + ":" + fmt.Sprint(call.line+1)), "error"
-	}
-	if variables[callable.name.variable].FUNC {
 
-		argvals := []any{}
-		for i := 0; i < len(callable.args); i++ {
-			resp, ty := runprocess(callable.args[i], origin, vargroups)
-			if ty == "error" {
-				return resp, ty
-			}
-			argvals = append(argvals, resp)
-		}
-		val, err := variables[callable.name.variable].VAL.(func(...any) (any, any))(argvals...)
-		if err != nil {
-			return err, "error"
-		}
-		return val, "value"
-	} else {
 		argvars := make(map[string]variableValue)
-		for i := 0; i < len(callable.args); i++ {
-			resp, ty := runprocess(callable.args[i], origin, vargroups)
+		for i := 0; i < len(variable.args); i++ {
+			resp, ty := runprocess(call.args[i], origin, vargroups)
 			if ty == "error" {
 				return resp, ty
 			}
-			name := variables[callable.name.variable].VAL.(setFunction).args[i]
+			name := variable.args[i]
 			argvars[name] = variableValue{
 				VAL:    resp,
 				TYPE:   "var",
@@ -266,11 +301,38 @@ func callFunc(call funcCallType, vargroups []map[string]variableValue, origin st
 				FUNC:   false,
 			}
 		}
-		ty, val, _ := run(variables[callable.name.variable].VAL.(setFunction).code, origin, append(vargroups, modules[variables[callable.name.variable].origin], argvars))
+		ty, val, _ := run(variable.code, origin, append(variable.vargroups, argvars))
 		if ty != "return" && ty != "error" && ty != nil {
-			return fmt.Sprint(ty) + " is not allowed in function: " + origin + ":" + fmt.Sprint(callable.line+1), "error"
+			return fmt.Sprint(ty) + " is not allowed in function: " + origin + ":" + fmt.Sprint(variable.line+1), "error"
+		} else if ty == "error" {
+			return val, ty
 		}
 		return val, "value"
+	case builtinFunc:
+		argvals := []any{}
+		for i := 0; i < len(call.args); i++ {
+			resp, ty := runprocess(call.args[i], origin, vargroups)
+			if ty == "error" {
+				return resp, ty
+			}
+			argvals = append(argvals, resp)
+		}
+		val, err := variable.FUNC(argvals...)
+		if err != nil {
+			return err, "error"
+		}
+		return val, "value"
+	default:
+		return ("value is not a function: " + origin + ":" + fmt.Sprint(call.line+1)), "error"
+	}
+}
+
+func isCallableFunc(x any) bool {
+	switch x.(type) {
+	case callableFunction:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -287,18 +349,24 @@ func setVariableVal(x setVariable, vargroups [](map[string]variableValue), origi
 		variable = vargroups[len(vargroups)-1]
 	}
 	if variable[x.variable.variable].EXISTS == nil {
-		resp, ty := runop(x.value, origin, vargroups)
-		if ty == "error" {
-			return resp
-		}
+		var val any
 		var TYPE = x.TYPE
-		if TYPE == "preset" {
-			TYPE = "var"
+		if isCallableFunc(x.value) {
+			val = x.value
+		} else {
+			resp, ty := runop(x.value, origin, vargroups)
+			if ty == "error" {
+				return resp
+			}
+			val = resp
+			if TYPE == "preset" {
+				TYPE = "var"
+			}
 		}
 		vargroups[len(vargroups)-1][x.variable.variable] = variableValue{
 			TYPE:   TYPE,
 			EXISTS: true,
-			VAL:    resp,
+			VAL:    val,
 			origin: origin,
 			FUNC:   false,
 		}
@@ -332,15 +400,16 @@ func setFunctionVal(x setFunction, vargroups []map[string]variableValue, origin 
 			break
 		}
 	}
+	x.FUNC.vargroups = vargroups
 	if variable[x.name].EXISTS == nil {
 		vargroups[len(vargroups)-1][x.name] = variableValue{
-			TYPE:   "func",
+			TYPE:   "var",
 			EXISTS: true,
-			VAL:    x,
+			VAL:    x.FUNC,
 			FUNC:   false,
 			origin: origin,
 		}
-	} else if variable[x.name].TYPE == "func" {
+	} else if variable[x.name].TYPE == "var" {
 		vari := variable[x.name]
 		vari.VAL = x
 		vari.FUNC = false

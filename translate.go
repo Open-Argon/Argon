@@ -8,7 +8,7 @@ import (
 
 var anyAndNewline = "((.)|(\\n))"
 var variableOnly = "([a-zA-Z_])([a-zA-Z0-9_])*"
-var variableWithIndexes = variableOnly + "(\\[" + anyAndNewline + "+\\]|\\.variableOnly)*"
+var variableWithIndexes = variableOnly + "(\\[" + anyAndNewline + "+\\]|\\." + variableOnly + ")*"
 var stringCompile = makeRegex("(( *)\"((\\\\([a-z\\\"'`]))|[^\\\"])*\"( *))|(( *)'((\\\\([a-z\\'\"`]))|[^\\'])*'( *))|(( *)(`(\\\\[a-z\\\"'`\\n]|[^\\`])*`)( *))")
 var numberCompile = makeRegex("( *)(\\-)?(([0-9]*(\\.[0-9]+)?)(e((\\-|\\+)?([0-9]+(\\.[0-9]+)?)))?)( *)")
 var whileCompile = makeRegex("( *)(while( )+" + anyAndNewline + "+( )+\\[" + anyAndNewline + "*)( *)")
@@ -20,12 +20,14 @@ var closeCompile = makeRegex("( *)\\]( *)")
 var switchCloseCompile = makeRegex("( *)" + anyAndNewline + "*\\]" + anyAndNewline + "*\\[" + anyAndNewline + "*( *)")
 var importCompile = makeRegex("( *)((import " + anyAndNewline + "+)|(from( +)" + anyAndNewline + "+( +)import( +)(( *)" + variableOnly + "( *)(\\,( *)" + variableOnly + "( *))*)))( *)")
 var bracketsCompile = makeRegex("( *)\\(" + anyAndNewline + "*\\)( *)")
-var functionCompile = makeRegex("( *)" + variableOnly + "\\(" + anyAndNewline + "*\\)( *)")
+var functionCompile = makeRegex("( *)" + anyAndNewline + "+\\(" + anyAndNewline + "*\\)( *)")
+var indexCompile = makeRegex("( *)" + anyAndNewline + "+\\[" + anyAndNewline + "+\\]( *)")
 var variableTextCompile = makeRegex("( *)" + variableWithIndexes + "( *)")
 var variableonlyCompile = makeRegex(variableOnly)
 var setVariableCompile = makeRegex("( *)(((const|var) (" + variableOnly + "( *))=( *)" + anyAndNewline + "+)|(( *)" + variableOnly + "( *))(( *)=( *)" + anyAndNewline + "+))( *)")
 var callErrorCompile = makeRegex("( *)(error(( )+" + anyAndNewline + "+))( *)")
 var returnStatementCompile = makeRegex("( *)(return(( )+" + anyAndNewline + "*)?)( *)")
+var deleteStatmentCompile = makeRegex("( *)(delete( )+" + variableWithIndexes + ")( *)")
 var itemsCompiled = makeRegex("( *)(\\[" + anyAndNewline + "*\\])( *)")
 var breakStatementCompile = makeRegex("( *)break( *)")
 var continueStatementCompile = makeRegex("( *)continue( *)")
@@ -364,20 +366,40 @@ var translateprocess = func(codeseg code) (any, bool, any) {
 		}, true, nil
 	} else if functionCompile.MatchString(codeseg.code) {
 		str := strings.Trim(codeseg.code, " ")
-		bracketsplit := strings.SplitN(str, "(", 2)
-		funcname := strings.Trim(bracketsplit[0], " ")
-		params := bracketsplit[1][:len(bracketsplit[1])-1]
+		indent := 0
+		output := []byte{}
+		for i := len(str) - 2; i >= 0; i-- {
+			if str[i] == ')' {
+				indent++
+			} else if str[i] == '(' {
+				indent--
+				if indent < 0 {
+					break
+				}
+			}
+			output = append([]byte{str[i]}, output...)
+		}
+		params := string(output[:])
 		paramstranslated, worked, err := getValuesFromCommas(params, codeseg.line)
+		if !worked {
+			return nil, false, "invalid params on line " + fmt.Sprint(codeseg.line+1)
+		}
+		if err != nil {
+			return nil, false, err
+		}
+		FUNC, worked, err := processfunc(code{
+			code: str[:len(str)-len(params)-2],
+			line: codeseg.line,
+		})
+		if !worked {
+			return nil, false, "invalid value on line " + fmt.Sprint(codeseg.line+1)
+		}
 		if err != nil {
 			return nil, false, err
 		}
 		if worked {
 			return funcCallType{
-				name: variable{
-					variable: funcname,
-					splices:  []any{},
-					line:     codeseg.line,
-				},
+				FUNC: FUNC,
 				args: paramstranslated,
 				line: codeseg.line,
 			}, true, nil
@@ -402,6 +424,50 @@ var translateprocess = func(codeseg code) (any, bool, any) {
 				line: codeseg.line,
 			}, true, nil
 		}
+	} else if indexCompile.MatchString(codeseg.code) {
+		str := strings.Trim(codeseg.code, " ")
+		indent := 0
+		output := []byte{}
+		for i := len(str) - 2; i >= 0; i-- {
+			if str[i] == ']' {
+				indent++
+			} else if str[i] == '[' {
+				indent--
+				if indent < 0 {
+					break
+				}
+			}
+			output = append([]byte{str[i]}, output...)
+		}
+		value := string(output[:])
+		resp, worked, err := processfunc(code{
+			code: value,
+			line: codeseg.line,
+		})
+		if !worked {
+			return nil, false, "invalid index value on line " + fmt.Sprint(codeseg.line+1)
+		}
+		if err != nil {
+			return nil, false, err
+		}
+		index := resp
+
+		resp, worked, err = processfunc(code{
+			code: str[:len(str)-len(value)-2],
+			line: codeseg.line,
+		})
+		if !worked {
+			return nil, false, "invalid value on line " + fmt.Sprint(codeseg.line+1)
+		}
+		if err != nil {
+			return nil, false, err
+		}
+
+		return indexType{
+			to:    resp,
+			index: index,
+			line:  codeseg.line,
+		}, true, nil
 	} else if numberCompile.MatchString(codeseg.code) {
 		if s, err := strconv.ParseFloat(strings.Trim(codeseg.code, " "), 64); err == nil {
 			return s, true, nil
@@ -411,7 +477,6 @@ var translateprocess = func(codeseg code) (any, bool, any) {
 	} else if variableTextCompile.MatchString(codeseg.code) {
 		return variable{
 			variable: strings.Trim(codeseg.code, " "),
-			splices:  []any{},
 			line:     codeseg.line,
 		}, true, nil
 	}
@@ -445,13 +510,6 @@ var translateline = func(i int, codearray []code) (any, int, any) {
 		}, i + 1, nil
 	} else if skipCompile.MatchString(codeseg.code) {
 		return nil, i + 1, nil
-	}
-	resp, worked, err := translateprocess(codeseg)
-	if err != nil {
-		return nil, 0, err
-	}
-	if worked {
-		return resp, i + 1, nil
 	} else if setVariableCompile.MatchString(codeseg.code) {
 		VAR := strings.Split(codeseg.code, "=")
 		firstSplit := strings.Split(strings.Trim(VAR[0], " "), " ")
@@ -472,11 +530,26 @@ var translateline = func(i int, codearray []code) (any, int, any) {
 			TYPE: TYPE,
 			variable: variable{
 				variable: vari,
-				splices:  []any{},
 				line:     codeseg.line,
 			},
 			value: resp,
 			line:  codeseg.line,
+		}, i + 1, nil
+	}
+	resp, worked, err := translateprocess(codeseg)
+	if err != nil {
+		return nil, 0, err
+	}
+	if worked {
+		return resp, i + 1, nil
+	} else if deleteStatmentCompile.MatchString(codeseg.code) {
+		str := strings.Trim(codeseg.code, " ")
+		return deleteType{
+			variable: variable{
+				variable: str[7:],
+				line:     codeseg.line,
+			},
+			line: codeseg.line,
 		}, i + 1, nil
 	} else if whileCompile.MatchString(codeseg.code) {
 		str := strings.Trim(codeseg.code, " ")
@@ -683,8 +756,13 @@ var translateline = func(i int, codearray []code) (any, int, any) {
 		}
 		return setFunction{
 			name: functionname,
-			args: args,
-			code: codeoutput,
+			FUNC: callableFunction{
+				name: functionname,
+				args: args,
+				code: codeoutput,
+				line: codeseg.line,
+			},
+			line: codeseg.line,
 		}, x, nil
 	} else if importCompile.MatchString(codeseg.code) {
 		str := strings.Trim(codeseg.code, " ")

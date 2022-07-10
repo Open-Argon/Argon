@@ -1,6 +1,8 @@
 # functions
 # a sub library of maths
 
+from constants import e
+
 sub factorial(num) [
     num = whole(num)
     answer = 1

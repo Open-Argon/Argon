@@ -1,13 +1,14 @@
 # trigonometry
 # a sub library of maths
 
-from 'functions' import abs, sqrt, mod
+from functions import abs, sqrt, mod
+from constants import pi
 
 # trigonometry
 
 sub sin(theta) [
     result = -(mod(theta divided by 180, 1) minus .5) to the power of 2 times 4 plus 1
-    if ((theta div 180) div 1) mod 2 is not equal to 0 [
+    if theta div 180 div 1 mod 2 is not equal to 0 [
         result = result times -1
     ]
     return result
@@ -31,6 +32,11 @@ sub acos(result) [
     return asin(result) - 90
 ]
 
+# make a inverse tan function
+# e.g. atan(tan(x)) = x
+# use asin and acos to get theta
+# use tan to get result
+
 sub atan(result) [
-    return
+    return asin(result*acos(result))
 ]

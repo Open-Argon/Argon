@@ -6,15 +6,15 @@ var vars = make(map[string]variableValue)
 
 func init() {
 	vars["log"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonLog,
+		VAL:    builtinFunc{"log", ArgonLog},
 		FUNC:   true,
 	}
 	vars["input"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonInput,
+		VAL:    builtinFunc{"input", ArgonInput},
 		FUNC:   true,
 	}
 	vars["yes"] = variableValue{
@@ -48,94 +48,88 @@ func init() {
 		FUNC:   false,
 	}
 	vars["number"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonNumber,
+		VAL:    builtinFunc{"number", ArgonNumber},
 		FUNC:   true,
 	}
 	vars["whole"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonWhole,
+		VAL:    builtinFunc{"whole", ArgonWhole},
 		FUNC:   true,
 	}
 	vars["string"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonString,
+		VAL:    builtinFunc{"string", ArgonString},
 		FUNC:   true,
 	}
 	vars["license"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonLicense,
+		VAL:    builtinFunc{"license", ArgonLicense},
 		FUNC:   true,
 	}
 	vars["exec"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    exec,
+		VAL:    builtinFunc{"exec", exec},
 		FUNC:   true,
 	}
 	vars["eval"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    eval,
+		VAL:    builtinFunc{"eval", eval},
 		FUNC:   true,
 	}
 
 	vars["append"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonAppend,
+		VAL:    builtinFunc{"append", ArgonAppend},
 		FUNC:   true,
 	}
 	vars["extend"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
 		VAL:    ArgonExtend,
 		FUNC:   true,
 	}
 	vars["len"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonLen,
+		VAL:    builtinFunc{"len", ArgonLen},
 		FUNC:   true,
 	}
 	vars["join"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonJoin,
+		VAL:    builtinFunc{"join", ArgonJoin},
 		FUNC:   true,
 	}
 	vars["random"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonRandom,
+		VAL:    builtinFunc{"random", ArgonRandom},
 		FUNC:   true,
 	}
 	vars["randomSetSeed"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonSetSeed,
-		FUNC:   true,
-	}
-	vars["randomSetSeed"] = variableValue{
-		TYPE:   "init_function",
-		EXISTS: true,
-		VAL:    ArgonSetSeed,
+		VAL:    builtinFunc{"randomSetSeed", ArgonSetSeed},
 		FUNC:   true,
 	}
 	vars["time"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonTime,
+		VAL:    builtinFunc{"time", ArgonTime},
 		FUNC:   true,
 	}
 	vars["sleep"] = variableValue{
-		TYPE:   "init_function",
+		TYPE:   "init",
 		EXISTS: true,
-		VAL:    ArgonSleep,
+		VAL:    builtinFunc{"sleep", ArgonSleep},
 		FUNC:   true,
 	}
 }

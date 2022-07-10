@@ -8,12 +8,11 @@ type opperator struct {
 
 type variable struct {
 	variable string
-	splices  []any
 	line     int
 }
 
 type funcCallType struct {
-	name variable
+	FUNC any
 	args []any
 	line int
 }
@@ -56,8 +55,7 @@ type setVariable struct {
 
 type setFunction struct {
 	name string
-	args []string
-	code []any
+	FUNC callableFunction
 	line int
 }
 
@@ -87,4 +85,28 @@ type tryType struct {
 
 type errorType struct {
 	val any
+}
+
+type deleteType struct {
+	variable variable
+	line     int
+}
+
+type builtinFunc struct {
+	name string
+	FUNC func(...any) (any, any)
+}
+
+type callableFunction struct {
+	name      any
+	args      []string
+	code      []any
+	vargroups []map[string]variableValue
+	line      int
+}
+
+type indexType struct {
+	to    any
+	index any
+	line  int
 }
